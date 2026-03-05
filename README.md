@@ -4,9 +4,13 @@ React + TypeScript (Vite) clickable prototype of a **generic LLM site** with a s
 
 ## To Do
 Make settings functional
+
 Onboarding/permissions
+
 Make it fit the style tile better
+
 Hand drawings + background 
+
 Fix scoring (@Eva)
 
 ## Run locally
