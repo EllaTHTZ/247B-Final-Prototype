@@ -2,16 +2,12 @@
 
 React + TypeScript (Vite) clickable prototype of a **generic LLM site** with a simulated **Chrome extension overlay**.
 
-## What this prototype includes
-
-- Generic "Ask anything" LLM-like page
-- Top-right extension panel (Clanker Clash)
-- Tug-of-war game: Humans vs Robots over lava
-- Prompt scoring (intentional vs low-effort)
-- Feedback after each submitted prompt
-- Template dropdown shown after low-effort prompts
-- Settings panel (Always On, session toggle, difficulty, music slider)
-- Win/Lose states, reflection prompt, and Play Again loop
+## To Do
+Make settings functional
+Onboarding/permissions
+Make it fit the style tile better
+Hand drawings + background 
+Fix scoring (@Eva)
 
 ## Run locally
 
