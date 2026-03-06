@@ -3,13 +3,15 @@
 React + TypeScript (Vite) clickable prototype of a **generic LLM site** with a simulated **Chrome extension overlay**.
 
 ## To Do
-Make settings functional
+Improve Settings (@Ella)
 
-Onboarding/permissions
+Improve onboarding (@Marissa)
 
 Make it fit the style tile better
 
-Hand drawings + background 
+Make it more compact
+
+Hand drawings + background (@Min)
 
 Fix scoring (@Eva)
 
