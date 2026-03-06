@@ -3,6 +3,8 @@ import charactersDefaultImage from './images/characters_default.png';
 import humansPullImage from './images/humans_pull.png';
 import robotsPullImage from './images/robots_pull.png';
 import extensionLogo from './images/logo.png';
+import Onboarding from './Onboarding';
+import Settings from './Settings';
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
 type MessageRole = 'user' | 'system';
@@ -19,9 +21,19 @@ type RoundScore = {
   message: string;
   suggestion: string;
 };
+
 type CharacterFrame = 'default' | 'humansPull' | 'robotsPull';
 
+type StoredPrefs = {
+  onboardingComplete: boolean;
+  alwaysOn: boolean;
+  promptPermission: boolean;
+  difficulty: Difficulty;
+};
+
 const MAX_POINTS = 10;
+const FEATURE_FLAG_VERSION_1_ALWAYS_ON = true;
+const STORAGE_KEY = 'clanker_clash_prefs_v1';
 
 const difficultyConfig: Record<Difficulty, { minGoodScore: number; humanGain: number; robotGain: number }> = {
   relaxed: { minGoodScore: 4, humanGain: 2, robotGain: 1 },
@@ -52,6 +64,25 @@ const templates = [
   },
 ];
 
+function readStoredPrefs(): StoredPrefs | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredPrefs;
+    if (
+      typeof parsed.onboardingComplete !== 'boolean' ||
+      typeof parsed.alwaysOn !== 'boolean' ||
+      typeof parsed.promptPermission !== 'boolean' ||
+      !['relaxed', 'normal', 'strict'].includes(parsed.difficulty)
+    ) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function scorePrompt(prompt: string, level: Difficulty): RoundScore {
   const lowered = prompt.toLowerCase();
   let score = 0;
@@ -79,14 +110,24 @@ function scorePrompt(prompt: string, level: Difficulty): RoundScore {
 }
 
 export default function App() {
+  const storedPrefs = readStoredPrefs();
+  const allowAlwaysOn = FEATURE_FLAG_VERSION_1_ALWAYS_ON;
+
+  const initialOnboardingComplete = storedPrefs?.onboardingComplete ?? false;
+  const initialAlwaysOn = allowAlwaysOn ? (storedPrefs?.alwaysOn ?? true) : false;
+
   const [view, setView] = useState<ViewMode>('game');
   const [prompt, setPrompt] = useState('');
   const [chat, setChat] = useState<ChatMessage[]>([]);
 
-  const [alwaysOn, setAlwaysOn] = useState(true);
-  const [sessionOn, setSessionOn] = useState(true);
-  const [difficulty, setDifficulty] = useState<Difficulty>('normal');
+  const [alwaysOn, setAlwaysOn] = useState(initialAlwaysOn);
+  const [difficulty, setDifficulty] = useState<Difficulty>(storedPrefs?.difficulty ?? 'normal');
   const [music, setMusic] = useState(30);
+  const [promptPermission, setPromptPermission] = useState(storedPrefs?.promptPermission ?? false);
+  const [onboardingComplete, setOnboardingComplete] = useState(initialOnboardingComplete);
+  const [sessionActive, setSessionActive] = useState(initialAlwaysOn);
+  const [sessionPromptDismissed, setSessionPromptDismissed] = useState(false);
+  const [isExtensionOpen, setIsExtensionOpen] = useState(!initialOnboardingComplete || initialAlwaysOn);
 
   const [humans, setHumans] = useState(0);
   const [robots, setRobots] = useState(0);
@@ -100,6 +141,7 @@ export default function App() {
   const [characterFrame, setCharacterFrame] = useState<CharacterFrame>('default');
   const pullTimeoutRef = useRef<number | null>(null);
 
+  const effectiveAlwaysOn = allowAlwaysOn && alwaysOn;
   const balance = robots - humans;
   const characterStyle = useMemo(
     () => ({ transform: `translate(-50%, 105px) translateX(${balance * 7}px)` }),
@@ -112,6 +154,9 @@ export default function App() {
         ? robotsPullImage
         : charactersDefaultImage;
 
+  const showSessionPrompt =
+    onboardingComplete && !effectiveAlwaysOn && !sessionActive && !isExtensionOpen && !sessionPromptDismissed;
+
   useEffect(() => {
     return () => {
       if (pullTimeoutRef.current !== null) {
@@ -119,6 +164,17 @@ export default function App() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!onboardingComplete) return;
+    const toStore: StoredPrefs = {
+      onboardingComplete: true,
+      alwaysOn: effectiveAlwaysOn,
+      promptPermission,
+      difficulty,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+  }, [difficulty, effectiveAlwaysOn, onboardingComplete, promptPermission]);
 
   function flashPullFrame(winner: 'humans' | 'robots') {
     if (pullTimeoutRef.current !== null) {
@@ -169,6 +225,18 @@ export default function App() {
     setPrompt(value);
   }
 
+  function onLogoClick() {
+    setIsExtensionOpen((prev) => {
+      const next = !prev;
+      if (next && !effectiveAlwaysOn) {
+        setSessionActive(true);
+        setSessionPromptDismissed(true);
+      }
+      return next;
+    });
+    setView('game');
+  }
+
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -179,7 +247,10 @@ export default function App() {
 
     addMessage('user', nextPrompt);
 
-    if (!alwaysOn || !sessionOn) {
+    const extensionActive =
+      onboardingComplete && isExtensionOpen && promptPermission && (effectiveAlwaysOn || sessionActive);
+
+    if (!extensionActive) {
       addMessage('system', 'Extension is off for this session. Prompt sent without scoring.');
       setPrompt('');
       return;
@@ -216,6 +287,33 @@ export default function App() {
     setPrompt('');
   }
 
+  function onCompleteOnboarding(result: { alwaysOn: boolean; difficulty: Difficulty; promptPermission: true }) {
+    const nextAlwaysOn = allowAlwaysOn ? result.alwaysOn : false;
+
+    setAlwaysOn(nextAlwaysOn);
+    setDifficulty(result.difficulty);
+    setPromptPermission(result.promptPermission);
+    setOnboardingComplete(true);
+    setSessionPromptDismissed(false);
+
+    if (nextAlwaysOn) {
+      setSessionActive(true);
+      setIsExtensionOpen(true);
+    } else {
+      setSessionActive(false);
+      setIsExtensionOpen(false);
+    }
+  }
+
+  function onAlwaysOnChange(checked: boolean) {
+    setAlwaysOn(checked);
+    if (checked) {
+      setSessionActive(true);
+      return;
+    }
+    setSessionPromptDismissed(false);
+  }
+
   const ropeCaption =
     balance === 0
       ? 'Tied match over the lava pit.'
@@ -234,113 +332,126 @@ export default function App() {
           </div>
           <div className="url-pill">https://some-llm-site.local</div>
           <div className="ext-controls">
-            <img className="ext-logo" src={extensionLogo} alt="Clanker Clash extension" />
+            <button
+              className="ext-logo-btn"
+              type="button"
+              onClick={onLogoClick}
+              aria-label="Toggle Clanker Clash extension"
+              title="Toggle Clanker Clash"
+            >
+              <img className="ext-logo" src={extensionLogo} alt="Clanker Clash extension" />
+            </button>
             <button className="ext-puzzle" type="button" aria-label="Extensions">
               🧩
             </button>
           </div>
         </header>
 
-        <aside className="extension">
-          <div className="extension-head">
-            <div>
-              <strong>Clanker Clash</strong>
-              <p>Mindful prompting mini-game</p>
-            </div>
-            <button className="icon-btn" title="Settings" onClick={() => setView('settings')}>
-              ⚙
-            </button>
-          </div>
-
-          <section className={`panel ${view === 'game' ? 'active' : ''}`}>
-            <div className="status-row">
-              <span className="badge humans">
-                Humans: <b>{humans}</b>
-              </span>
-              <span className="badge robots">
-                Robots: <b>{robots}</b>
-              </span>
-            </div>
-
-            <div className="arena" aria-label="Tug of war arena">
-              <div className="arena-track">
-                <div className="arena-pit">LAVA</div>
-                <img
-                  src={characterImage}
-                  alt="Humans and robots tug-of-war"
-                  className="character-strip"
-                  style={characterStyle}
-                />
-              </div>
-              <div className="arena-caption">{ropeCaption}</div>
-            </div>
-
-            <div className={`feedback ${feedbackTone}`}>{feedbackText}</div>
-
-            {showTemplates && (
-              <label className="template-wrap">
-                Intentional prompt templates
-                <select defaultValue="" onChange={(event) => onTemplateChange(event.target.value)}>
-                  <option value="">Select a template...</option>
-                  {templates.map((template) => (
-                    <option key={template.label} value={template.value}>
-                      {template.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
-            {gameOver && (
-              <div className="result">
-                {resultText}
-                <br />
-                <button className="secondary-btn" style={{ marginTop: '0.6rem' }} onClick={resetGame}>
-                  Play Again
-                </button>
-              </div>
-            )}
-          </section>
-
-          <section className={`panel ${view === 'settings' ? 'active' : ''}`}>
-            <h2>Game Settings</h2>
-            <label className="toggle-row">
-              <span>Always On</span>
-              <input type="checkbox" checked={alwaysOn} onChange={(event) => setAlwaysOn(event.target.checked)} />
-            </label>
-            <label className="toggle-row">
-              <span>Enable this session</span>
-              <input type="checkbox" checked={sessionOn} onChange={(event) => setSessionOn(event.target.checked)} />
-            </label>
-
-            <label className="field-row">
-              Difficulty
-              <select
-                value={difficulty}
-                onChange={(event) => setDifficulty(event.target.value as Difficulty)}
+        {showSessionPrompt && (
+          <div className="session-nudge">
+            <p>We noticed you&apos;re on an LLM site. Turn on Clanker Clash for this session?</p>
+            <div className="session-nudge-actions">
+              <button
+                className="secondary-btn"
+                onClick={() => {
+                  setSessionActive(true);
+                  setIsExtensionOpen(true);
+                  setSessionPromptDismissed(true);
+                }}
               >
-                <option value="relaxed">Relaxed</option>
-                <option value="normal">Normal</option>
-                <option value="strict">Strict</option>
-              </select>
-            </label>
+                Turn On
+              </button>
+              <button className="secondary-btn" onClick={() => setSessionPromptDismissed(true)}>
+                Not now
+              </button>
+            </div>
+          </div>
+        )}
 
-            <label className="field-row">
-              Music
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={music}
-                onChange={(event) => setMusic(Number(event.target.value))}
+        {isExtensionOpen && (
+          <aside className="extension">
+            {!onboardingComplete ? (
+              <Onboarding
+                showAlwaysOnQuestion={allowAlwaysOn}
+                initialDifficulty={difficulty}
+                onComplete={onCompleteOnboarding}
               />
-            </label>
+            ) : (
+              <>
+                <div className="extension-head">
+                  <div>
+                    <strong>Clanker Clash</strong>
+                  </div>
+                  <button className="icon-btn" title="Settings" onClick={() => setView('settings')}>
+                    ⚙
+                  </button>
+                </div>
 
-            <button className="secondary-btn" onClick={() => setView('game')}>
-              Back
-            </button>
-          </section>
-        </aside>
+                <section className={`panel ${view === 'game' ? 'active' : ''}`}>
+                  <div className="status-row">
+                    <span className="badge humans">
+                      Humans: <b>{humans}</b>
+                    </span>
+                    <span className="badge robots">
+                      Robots: <b>{robots}</b>
+                    </span>
+                  </div>
+
+                  <div className="arena" aria-label="Tug of war arena">
+                    <div className="arena-track">
+                      <div className="arena-pit">LAVA</div>
+                      <img
+                        src={characterImage}
+                        alt="Humans and robots tug-of-war"
+                        className="character-strip"
+                        style={characterStyle}
+                      />
+                    </div>
+                    <div className={`arena-caption ${feedbackTone}`}>
+                      {feedbackText || ropeCaption}
+                    </div>
+                  </div>
+
+                  {showTemplates && (
+                    <label className="template-wrap">
+                      Intentional prompt templates
+                      <select defaultValue="" onChange={(event) => onTemplateChange(event.target.value)}>
+                        <option value="">Select a template...</option>
+                        {templates.map((template) => (
+                          <option key={template.label} value={template.value}>
+                            {template.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+
+                  {gameOver && (
+                    <div className="result">
+                      {resultText}
+                      <br />
+                      <button className="secondary-btn" style={{ marginTop: '0.6rem' }} onClick={resetGame}>
+                        Play Again
+                      </button>
+                    </div>
+                  )}
+                </section>
+
+                <Settings
+                  isActive={view === 'settings'}
+                  showAlwaysOn={allowAlwaysOn}
+                  alwaysOn={alwaysOn}
+                  difficulty={difficulty}
+                  music={music}
+                  onAlwaysOnChange={onAlwaysOnChange}
+                  onDifficultyChange={setDifficulty}
+                  onMusicChange={setMusic}
+                  onBack={() => setView('game')}
+                />
+              </>
+            )}
+          </aside>
+        )}
       </div>
 
       <main className="llm-main">

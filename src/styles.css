@@ -82,6 +82,15 @@ body {
   object-fit: contain;
 }
 
+.ext-logo-btn {
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
 .ext-puzzle {
   background: transparent;
   border: 0;
@@ -215,7 +224,7 @@ h1 {
 
 .panel {
   display: none;
-  padding: 0.75rem;
+  padding: 0.55rem;
 }
 
 .panel.active {
@@ -348,11 +357,120 @@ h1 {
   margin: 0.55rem 0;
 }
 
+.onboarding {
+  /* remove the hard cap that causes clipping */
+  max-height: none;
+
+  /* tighter layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  gap: 0.45rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.onboarding h2 {
+  margin: 0;
+  font-family: 'Pixelify Sans', monospace;
+  font-size: 1.7rem;   /* smaller */
+  line-height: 1.05;
+}
+
+.onboarding h3 {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.onboarding-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.onboarding p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.onboarding .field-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.onboarding .field-row select {
+  width: 160px;      /* keeps it small */
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+}
+
+.onboarding-error {
+  margin: 0;
+  border: 2px dashed var(--red);
+  border-radius: 10px;
+  background: #fff2f2;
+  padding: 0.5rem;
+}
+
+.play-btn {
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  background: var(--green);
+  color: #0e2213;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.7rem 1.2rem;
+}
+
+.session-nudge {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0.75rem;
+  width: min(360px, 92vw);
+  border: 3px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.7rem;
+  z-index: 40;
+}
+
+.session-nudge p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.session-nudge-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
 @media (max-width: 980px) {
-  .extension {
+  .session-nudge {
     position: static;
-    margin: 1rem auto 0;
+    margin: 0.6rem auto 0;
     width: min(720px, 100%);
+  }
+
+  .extension {
+    width: min(360px, 92vw);
+    border: 3px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
   }
 
   .llm-main {
