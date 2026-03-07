@@ -6,11 +6,13 @@ import extensionLogo from './images/logo.png';
 import Onboarding, { AVATARS } from './Onboarding';
 import Settings from './Settings';
 import Stats, { GameRecord } from './Stats';
+import Leaderboard from './Leaderboard';
+
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
 type MessageRole = 'user' | 'system';
 type FeedbackTone = 'neutral' | 'good' | 'bad';
-type ViewMode = 'game' | 'settings' | 'stats';
+type ViewMode = 'game' | 'settings' | 'stats' | 'leaderboard';
 
 type ChatMessage = {
   role: MessageRole;
@@ -434,6 +436,8 @@ export default function App() {
                     <p className="extension-avatar">{avatar} You</p>
                   </div>
                   <div className="extension-head-btns">
+                    <button className="icon-btn" title="Leaderboard" onClick={() => setView('leaderboard')}>
+                      ★
                     <button className="icon-btn" title="Stats" onClick={() => setView('stats')}>
                       ▦
                     </button>
@@ -508,6 +512,11 @@ export default function App() {
                 <Stats
                   isActive={view === 'stats'}
                   history={history}
+                  onBack={() => setView('game')}
+                />
+                <Leaderboard
+                  isActive={view === 'leaderboard'}
+                  currentAvatar={avatar}
                   onBack={() => setView('game')}
                 />
               </>
