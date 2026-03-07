@@ -5,11 +5,12 @@ import robotsPullImage from './images/robots_pull.png';
 import extensionLogo from './images/logo.png';
 import Onboarding, { AVATARS } from './Onboarding';
 import Settings from './Settings';
+import Stats, { GameRecord } from './Stats';
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
 type MessageRole = 'user' | 'system';
 type FeedbackTone = 'neutral' | 'good' | 'bad';
-type ViewMode = 'game' | 'settings';
+type ViewMode = 'game' | 'settings' | 'stats';
 
 type ChatMessage = {
   role: MessageRole;
@@ -35,6 +36,23 @@ type StoredPrefs = {
 const MAX_POINTS = 10;
 const FEATURE_FLAG_VERSION_1_ALWAYS_ON = true;
 const STORAGE_KEY = 'clanker_clash_prefs_v1';
+const HISTORY_KEY = 'clanker_clash_history_v1';
+const MAX_HISTORY = 20;
+
+function readHistory(): GameRecord[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(records: GameRecord[]) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(records.slice(-MAX_HISTORY)));
+}
 
 const difficultyConfig: Record<Difficulty, { minGoodScore: number; humanGain: number; robotGain: number }> = {
   relaxed: { minGoodScore: 4, humanGain: 2, robotGain: 1 },
@@ -131,6 +149,10 @@ export default function App() {
   const [avatar, setAvatar] = useState(storedPrefs?.avatar ?? AVATARS[0]);
   const [isExtensionOpen, setIsExtensionOpen] = useState(!initialOnboardingComplete || initialAlwaysOn);
 
+  const [history, setHistory] = useState<GameRecord[]>(readHistory);
+  const [roundIntentional, setRoundIntentional] = useState(0);
+  const [roundLowEffort, setRoundLowEffort] = useState(0);
+
   const [humans, setHumans] = useState(0);
   const [robots, setRobots] = useState(0);
   const [feedbackTone, setFeedbackTone] = useState<FeedbackTone>('neutral');
@@ -195,8 +217,23 @@ export default function App() {
     setChat((prev) => [{ role, text }, ...prev]);
   }
 
-  function endGame(nextHumans: number, nextRobots: number) {
+  function endGame(nextHumans: number, nextRobots: number, intentional: number, lowEffort: number) {
     setGameOver(true);
+
+    const record: GameRecord = {
+      date: new Date().toISOString(),
+      winner: nextHumans > nextRobots ? 'humans' : 'robots',
+      humanScore: nextHumans,
+      robotScore: nextRobots,
+      difficulty,
+      intentional,
+      lowEffort,
+    };
+    setHistory((prev) => {
+      const next = [...prev, record].slice(-MAX_HISTORY);
+      saveHistory(next);
+      return next;
+    });
 
     if (nextHumans > nextRobots) {
       setResultText('Humans win. Reward unlocked: +25 coins and Mindful Starter badge.');
@@ -211,6 +248,8 @@ export default function App() {
   function resetGame() {
     setHumans(0);
     setRobots(0);
+    setRoundIntentional(0);
+    setRoundLowEffort(0);
     setGameOver(false);
     setShowTemplates(false);
     setResultText('');
@@ -265,16 +304,23 @@ export default function App() {
     let nextHumans = humans;
     let nextRobots = robots;
 
+    let nextIntentional = roundIntentional;
+    let nextLowEffort = roundLowEffort;
+
     if (scoreData.intentional) {
       nextHumans = Math.min(MAX_POINTS, humans + config.humanGain);
+      nextIntentional = roundIntentional + 1;
       setHumans(nextHumans);
+      setRoundIntentional(nextIntentional);
       setFeedbackTone('good');
       setFeedbackText(`${scoreData.message} ${scoreData.suggestion}`);
       setShowTemplates(false);
       flashPullFrame('humans');
     } else {
       nextRobots = Math.min(MAX_POINTS, robots + config.robotGain);
+      nextLowEffort = roundLowEffort + 1;
       setRobots(nextRobots);
+      setRoundLowEffort(nextLowEffort);
       setFeedbackTone('bad');
       setFeedbackText(`${scoreData.message} ${scoreData.suggestion}`);
       setShowTemplates(true);
@@ -284,7 +330,7 @@ export default function App() {
     addMessage('system', `${scoreData.intentional ? 'Humans' : 'Robots'} gain points. (${nextHumans}-${nextRobots})`);
 
     if (nextHumans >= MAX_POINTS || nextRobots >= MAX_POINTS) {
-      endGame(nextHumans, nextRobots);
+      endGame(nextHumans, nextRobots, nextIntentional, nextLowEffort);
     }
 
     setPrompt('');
@@ -387,9 +433,14 @@ export default function App() {
                     <strong>Clanker Clash</strong>
                     <p className="extension-avatar">{avatar} You</p>
                   </div>
-                  <button className="icon-btn" title="Settings" onClick={() => setView('settings')}>
-                    ⚙
-                  </button>
+                  <div className="extension-head-btns">
+                    <button className="icon-btn" title="Stats" onClick={() => setView('stats')}>
+                      ▦
+                    </button>
+                    <button className="icon-btn" title="Settings" onClick={() => setView('settings')}>
+                      ⚙
+                    </button>
+                  </div>
                 </div>
 
                 <section className={`panel ${view === 'game' ? 'active' : ''}`}>
@@ -451,6 +502,12 @@ export default function App() {
                   onAlwaysOnChange={onAlwaysOnChange}
                   onDifficultyChange={setDifficulty}
                   onMusicChange={setMusic}
+                  onBack={() => setView('game')}
+                />
+
+                <Stats
+                  isActive={view === 'stats'}
+                  history={history}
                   onBack={() => setView('game')}
                 />
               </>
