@@ -3,7 +3,7 @@ import charactersDefaultImage from './images/characters_default.png';
 import humansPullImage from './images/humans_pull.png';
 import robotsPullImage from './images/robots_pull.png';
 import extensionLogo from './images/logo.png';
-import Onboarding from './Onboarding';
+import Onboarding, { AVATARS } from './Onboarding';
 import Settings from './Settings';
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
@@ -29,6 +29,7 @@ type StoredPrefs = {
   alwaysOn: boolean;
   promptPermission: boolean;
   difficulty: Difficulty;
+  avatar?: string;
 };
 
 const MAX_POINTS = 10;
@@ -127,6 +128,7 @@ export default function App() {
   const [onboardingComplete, setOnboardingComplete] = useState(initialOnboardingComplete);
   const [sessionActive, setSessionActive] = useState(initialAlwaysOn);
   const [sessionPromptDismissed, setSessionPromptDismissed] = useState(false);
+  const [avatar, setAvatar] = useState(storedPrefs?.avatar ?? AVATARS[0]);
   const [isExtensionOpen, setIsExtensionOpen] = useState(!initialOnboardingComplete || initialAlwaysOn);
 
   const [humans, setHumans] = useState(0);
@@ -172,9 +174,10 @@ export default function App() {
       alwaysOn: effectiveAlwaysOn,
       promptPermission,
       difficulty,
+      avatar,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
-  }, [difficulty, effectiveAlwaysOn, onboardingComplete, promptPermission]);
+  }, [difficulty, effectiveAlwaysOn, onboardingComplete, promptPermission, avatar]);
 
   function flashPullFrame(winner: 'humans' | 'robots') {
     if (pullTimeoutRef.current !== null) {
@@ -287,12 +290,13 @@ export default function App() {
     setPrompt('');
   }
 
-  function onCompleteOnboarding(result: { alwaysOn: boolean; difficulty: Difficulty; promptPermission: true }) {
+  function onCompleteOnboarding(result: { alwaysOn: boolean; difficulty: Difficulty; promptPermission: true; avatar: string }) {
     const nextAlwaysOn = allowAlwaysOn ? result.alwaysOn : false;
 
     setAlwaysOn(nextAlwaysOn);
     setDifficulty(result.difficulty);
     setPromptPermission(result.promptPermission);
+    setAvatar(result.avatar);
     setOnboardingComplete(true);
     setSessionPromptDismissed(false);
 
@@ -381,6 +385,7 @@ export default function App() {
                 <div className="extension-head">
                   <div>
                     <strong>Clanker Clash</strong>
+                    <p className="extension-avatar">{avatar} You</p>
                   </div>
                   <button className="icon-btn" title="Settings" onClick={() => setView('settings')}>
                     ⚙

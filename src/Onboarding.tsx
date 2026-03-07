@@ -1,12 +1,15 @@
 import { useState } from 'react';
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
-type OnboardingStep = 'landing' | 'alwaysOn' | 'permission' | 'difficulty';
+type OnboardingStep = 'landing' | 'howItWorks' | 'avatar' | 'alwaysOn' | 'permission' | 'difficulty';
 
-type OnboardingResult = {
+export const AVATARS = ['🧑‍💻', '👩‍🔬', '🧙', '🥷', '🦸', '🤠', '🐱', '🐸'];
+
+export type OnboardingResult = {
   alwaysOn: boolean;
   difficulty: Difficulty;
   promptPermission: true;
+  avatar: string;
 };
 
 type OnboardingProps = {
@@ -24,8 +27,17 @@ export default function Onboarding({
   const [alwaysOn, setAlwaysOn] = useState(showAlwaysOnQuestion);
   const [difficulty, setDifficulty] = useState<Difficulty>(initialDifficulty);
   const [permissionError, setPermissionError] = useState('');
+  const [avatar, setAvatar] = useState(AVATARS[0]);
 
   function startSetup() {
+    setStep('howItWorks');
+  }
+
+  function afterHowItWorks() {
+    setStep('avatar');
+  }
+
+  function afterAvatar() {
     setStep(showAlwaysOnQuestion ? 'alwaysOn' : 'permission');
   }
 
@@ -44,11 +56,7 @@ export default function Onboarding({
   }
 
   function finishOnboarding() {
-    onComplete({
-      alwaysOn,
-      difficulty,
-      promptPermission: true,
-    });
+    onComplete({ alwaysOn, difficulty, promptPermission: true, avatar });
   }
 
   if (step === 'landing') {
@@ -59,6 +67,47 @@ export default function Onboarding({
         <p>Mindful LLM Prompting Game</p>
         <button className="play-btn" onClick={startSetup}>
           Play
+        </button>
+      </section>
+    );
+  }
+
+  if (step === 'howItWorks') {
+    return (
+      <section className="onboarding">
+        <h3>How It Works</h3>
+        <ul className="how-it-works-list">
+          <li>Humans and Robots are in a <b>tug-of-war over a lava pit</b>.</li>
+          <li>You write prompts to an LLM as usual — Clanker Clash watches in the background.</li>
+          <li><b>Thoughtful prompts</b> (with context, goals, or hints) earn points for <b>Humans</b>.</li>
+          <li><b>Low-effort prompts</b> (vague, "do it for me") earn points for <b>Robots</b>.</li>
+          <li>First side to <b>10 points</b> wins the round!</li>
+        </ul>
+        <button className="play-btn" onClick={afterHowItWorks}>
+          Got it!
+        </button>
+      </section>
+    );
+  }
+
+  if (step === 'avatar') {
+    return (
+      <section className="onboarding">
+        <h3>Pick your avatar</h3>
+        <div className="avatar-grid">
+          {AVATARS.map((a) => (
+            <button
+              key={a}
+              type="button"
+              className={`avatar-btn${avatar === a ? ' selected' : ''}`}
+              onClick={() => setAvatar(a)}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+        <button className="play-btn" onClick={afterAvatar}>
+          Next
         </button>
       </section>
     );
