@@ -438,6 +438,7 @@ export default function App() {
                   <div className="extension-head-btns">
                     <button className="icon-btn" title="Leaderboard" onClick={() => setView('leaderboard')}>
                       ★
+                    </button>
                     <button className="icon-btn" title="Stats" onClick={() => setView('stats')}>
                       ▦
                     </button>
