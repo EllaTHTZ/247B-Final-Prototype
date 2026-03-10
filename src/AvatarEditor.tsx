@@ -32,6 +32,7 @@ export type ColorPalette = {
   clothing: string;   // TugArena canvas-recolor target (replaces "red" pixels)
   shoes:    string;
   accent:   string;   // eye whites / highlight
+  eyes:  string;   //eye pupil, mouth
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,12 +40,12 @@ export type ColorPalette = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const COLOR_PALETTES: ColorPalette[] = [
-  { id: 'classic', label: 'Classic',  skin: '#ffc20f', hat: '#00005a', clothing: '#dead2a', shoes: '#ed1c24', accent: '#ffffff' },
-  { id: 'ocean',   label: 'Ocean',    skin: '#ffc20f', hat: '#0d3b6e', clothing: '#1a7fc1', shoes: '#0a4f8c', accent: '#7fd4fa' },
-  { id: 'forest',  label: 'Forest',   skin: '#f5a97a', hat: '#1b4a1e', clothing: '#2e7d32', shoes: '#4e342e', accent: '#a5d6a7' },
-  { id: 'sunset',  label: 'Sunset',   skin: '#ffc20f', hat: '#6a1b1a', clothing: '#e65100', shoes: '#bf360c', accent: '#ffcc80' },
-  { id: 'night',   label: 'Night',    skin: '#c3b1e1', hat: '#1a1a2e', clothing: '#4a148c', shoes: '#212121', accent: '#ce93d8' },
-  { id: 'candy',   label: 'Candy',    skin: '#ffb3c6', hat: '#ad1457', clothing: '#f06292', shoes: '#880e4f', accent: '#fff9c4' },
+  { id: 'classic', label: 'Classic',  skin: '#ffc20f', hat: '#00005a', clothing: '#dead2a', shoes: '#ed1c24', accent: '#ffffff', eyes: '#1f2a44' },
+  { id: 'ocean',   label: 'Ocean',    skin: '#ffc20f', hat: '#0d3b6e', clothing: '#1a7fc1', shoes: '#0a4f8c', accent: '#7fd4fa', eyes: '#1f2a44' },
+  { id: 'forest',  label: 'Forest',   skin: '#f5a97a', hat: '#1b4a1e', clothing: '#2e7d32', shoes: '#4e342e', accent: '#a5d6a7', eyes: '#1f2a44' },
+  { id: 'sunset',  label: 'Sunset',   skin: '#ffc20f', hat: '#6a1b1a', clothing: '#e65100', shoes: '#bf360c', accent: '#ffcc80', eyes: '#1f2a44' },
+  { id: 'night',   label: 'Night',    skin: '#c3b1e1', hat: '#1a1a2e', clothing: '#4a148c', shoes: '#212121', accent: '#ce93d8', eyes: '#1f2a44' },
+  { id: 'candy',   label: 'Candy',    skin: '#ffb3c6', hat: '#ad1457', clothing: '#f06292', shoes: '#880e4f', accent: '#fff9c4', eyes: '#1f2a44' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ export const COLOR_PALETTES: ColorPalette[] = [
 // N = hat  Y = skin  G = clothing  R = shoes  W = accent/white  _ = transparent
 // ─────────────────────────────────────────────────────────────────────────────
 
-type K = 'N' | 'Y' | 'G' | 'R' | 'W' | '_';
+type K = 'N' | 'Y' | 'G' | 'R' | 'W' | 'B' | '_';
 
 // Hat rows differ per base variant; body rows are shared
 const HAT_ROWS: Record<BaseId, K[][]> = {
@@ -98,10 +99,10 @@ const HAT_ROWS: Record<BaseId, K[][]> = {
 const BODY_ROWS: K[][] = [
   ['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'],   // 4  head top
   ['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'],   // 5  forehead
-  ['Y','Y','Y','Y','W','_','_','Y','Y','Y','W','_','_','Y','Y'],   // 6  eyes top
-  ['Y','Y','Y','Y','W','_','_','Y','Y','Y','W','_','_','Y','Y'],   // 7  eyes bot
+  ['Y','Y','Y','Y','W','B','B','Y','Y','Y','W','B','B','Y','Y'],   // 6  eyes top
+  ['Y','Y','Y','Y','W','B','B','Y','Y','Y','W','B','B','Y','Y'],   // 7  eyes bot
   ['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'],   // 8  nose row
-  ['_','Y','Y','Y','Y','Y','Y','_','_','_','Y','Y','Y','Y','_'],   // 9  mouth row
+  ['_','Y','Y','Y','Y','Y','Y','B','B','B','Y','Y','Y','Y','_'],   // 9  mouth row
   ['_','_','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','_','_'],   // 10 chin
   ['_','G','G','G','G','G','G','G','G','G','G','G','G','G','_'],   // 11 body top
   ['G','G','_','G','G','G','G','G','G','G','G','G','_','G','G'],   // 12 body + arms
@@ -125,6 +126,7 @@ function buildGrid(base: BaseId, pal: ColorPalette): (string | null)[][] {
     if (k === 'G') return pal.clothing;
     if (k === 'R') return pal.shoes;
     if (k === 'W') return pal.accent;
+    if (k === 'B') return pal.eyes;
     return null;
   }));
 }
