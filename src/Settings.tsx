@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AvatarDisplay, AvatarConfig } from './AvatarEditor';
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
@@ -16,6 +17,12 @@ type SettingsProps = {
   onEditAvatar: () => void;
 };
 
+const difficultyDescriptions: Record<Difficulty, string> = {
+  relaxed: 'More forgiving scoring. Robots gain +1 per low-effort prompt.',
+  normal: 'Balanced scoring. Both sides gain +2 per matching prompt.',
+  strict: 'Higher standards. Robots gain +3 per low-effort prompt.',
+};
+
 export default function Settings({
   isActive,
   showAlwaysOn,
@@ -29,22 +36,46 @@ export default function Settings({
   onBack,
   onEditAvatar,
 }: SettingsProps) {
+  const [saveMessage, setSaveMessage] = useState('');
+
+  function handleSave() {
+    setSaveMessage('Settings saved!');
+    setTimeout(() => setSaveMessage(''), 2000);
+  }
+
+  function handleReset() {
+    onDifficultyChange('normal');
+    onMusicChange(30);
+    if (showAlwaysOn) {
+      onAlwaysOnChange(true);
+    }
+    setSaveMessage('Reset to defaults!');
+    setTimeout(() => setSaveMessage(''), 2000);
+  }
+
   return (
     <section className={`panel ${isActive ? 'active' : ''}`}>
-      <div className="settings-top-row">
-        <h2 className="settings-heading">Game Settings</h2>
+    <div className="settings-top-row">
+      <h2 className="settings-heading">Game Settings</h2>
 
-        {/* Avatar profile card */}
-        <button className="avatar-profile-card" onClick={onEditAvatar} title="Edit Avatar">
-          <AvatarDisplay config={avatarConfig} size={52} />
-          <span className="avatar-card-label">Edit Avatar</span>
-        </button>
-      </div>
+      <button className="avatar-profile-card" onClick={onEditAvatar} title="Edit Avatar">
+        <AvatarDisplay config={avatarConfig} size={52} />
+        <span className="avatar-card-label">Edit Avatar</span>
+      </button>
+    </div>
 
       {showAlwaysOn && (
         <label className="toggle-row">
           <span>Always On</span>
-          <input type="checkbox" checked={alwaysOn} onChange={(event) => onAlwaysOnChange(event.target.checked)} />
+          <div className="toggle-switch">
+            <input
+              type="checkbox"
+              checked={alwaysOn}
+              onChange={(event) => onAlwaysOnChange(event.target.checked)}
+              id="always-on-toggle"
+            />
+            <span className="toggle-slider"></span>
+          </div>
         </label>
       )}
 
@@ -53,27 +84,40 @@ export default function Settings({
         <select
           value={difficulty}
           onChange={(event) => onDifficultyChange(event.target.value as Difficulty)}
+          className="settings-select"
         >
           <option value="relaxed">Relaxed</option>
           <option value="normal">Normal</option>
           <option value="strict">Strict</option>
         </select>
       </label>
+      <p className="difficulty-desc">{difficultyDescriptions[difficulty]}</p>
 
       <label className="field-row">
-        Music
+        <span>Music Volume: {music}%</span>
         <input
           type="range"
           min="0"
           max="100"
           value={music}
           onChange={(event) => onMusicChange(Number(event.target.value))}
+          className="music-slider"
         />
       </label>
 
-      <button className="secondary-btn" style={{ marginTop: '0.5rem' }} onClick={onBack}>
-        Back
-      </button>
+      {saveMessage && <div className="save-feedback">{saveMessage}</div>}
+
+      <div className="settings-actions">
+        <button className="secondary-btn" onClick={handleSave}>
+          Save
+        </button>
+        <button className="secondary-btn reset-btn" onClick={handleReset}>
+          Reset
+        </button>
+        <button className="secondary-btn" onClick={onBack}>
+          Back
+        </button>
+      </div>
     </section>
   );
 }
