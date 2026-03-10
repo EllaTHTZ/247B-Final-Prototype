@@ -2,6 +2,48 @@
 @import url('https://fonts.googleapis.com/css2?family=Bitcount+Single:wght@100..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   TUNING VARIABLES — change these to adjust the arena visuals
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ARENA SIZE
+   --tug-track-height        Height of the whole arena box.
+                             Increase to show more of the scene.
+
+   CROPPING / VERTICAL POSITION
+   --tug-crop-y              Which % of the 1200px source images to anchor to.
+                             72% = characters' feet. Decrease to show more sky
+                             (characters move down). Increase to show more
+                             ground (characters move up, may get cropped).
+
+   AVATAR (human player — the yellow character)
+   --tug-avatar-left         Horizontal position, % from left edge of track.
+                             18.5% = measured center of human in source image.
+                             Decrease to move avatar left, increase to move right.
+   --tug-avatar-bottom       How high off the ground floor the avatar sits.
+                             Increase to raise, decrease to lower (into ground).
+   --tug-avatar-width        Width of the avatar SVG in px.
+   --tug-avatar-height       Height of the avatar SVG in px.
+
+   ROBOT POSITION
+   --tug-robot-nudge-x       Nudge the robot left (negative) or right (positive).
+                             The robot's base position is set by its sprite (84%
+                             of the 1200px image). Use this to fine-tune.
+
+   ROPE POSITION
+   --tug-rope-nudge-x        Nudge the rope left or right from center.
+
+   OPACITY (useful for debugging layer positions)
+   --tug-robot-opacity       0 = invisible, 1 = fully visible
+   --tug-rope-opacity        0 = invisible, 1 = fully visible
+
+   ANIMATION
+   --tug-yank-distance       How far (px) a character gets yanked per pull event.
+                             Increase for more dramatic pull animation.
+   --tug-yank-duration       How long the yank animation lasts (e.g. 0.5s, 800ms).
+
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
   --bg: #fdfbec;
   --ink: #262626;
@@ -10,18 +52,36 @@
   --green: #0ad03f;
   --yellow: #ffcc00;
   --red: #eb4a4a;
+
+  /* Arena size */
+  --tug-track-height:    200px;
+
+  /* Vertical crop into the 1200px source images */
+  --tug-crop-y:          80%;
+
+  /* Avatar (human player) */
+  --tug-avatar-left:     18.5%;
+  --tug-avatar-bottom:   37%;
+  --tug-avatar-width:    52px;
+  --tug-avatar-height:   64px;
+
+  /* Robot and rope nudge (from their natural sprite positions) */
+  --tug-robot-nudge-x:   0px;
+  --tug-rope-nudge-x:    0px;
+
+  /* Opacity */
+  --tug-robot-opacity:   1;
+  --tug-rope-opacity:    1;
+
+  /* Pull animation */
+  --tug-yank-distance:   18px;
+  --tug-yank-duration:   0.5s;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ─────────────────────────────────────────────────────────────────────────── */
 
-html,
-body,
-#root {
-  margin: 0;
-  min-height: 100%;
-}
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
 
 body {
   min-height: 100vh;
@@ -30,15 +90,8 @@ body {
   color: var(--ink);
 }
 
-.site-shell {
-  position: relative;
-  min-height: 100vh;
-  padding: 1rem;
-}
-
-.browser-top {
-  position: relative;
-}
+.site-shell { position: relative; min-height: 100vh; padding: 1rem; }
+.browser-top { position: relative; }
 
 .fake-browser-bar {
   position: relative;
@@ -53,43 +106,15 @@ body {
 }
 
 .browser-dots span {
-  width: 10px;
-  height: 10px;
-  display: inline-block;
-  border-radius: 50%;
-  margin-right: 4px;
-  background: #c4c4c4;
+  width: 10px; height: 10px; display: inline-block;
+  border-radius: 50%; margin-right: 4px; background: #c4c4c4;
 }
 
-.url-pill {
-  flex: 1;
-  padding: 0.4rem 0.8rem;
-  border: 2px solid #aaa;
-  border-radius: 999px;
-  background: #fff;
-  font-size: 0.9rem;
-}
-
-.ext-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ext-logo {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-}
-
-.ext-puzzle {
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  padding: 4px;
-}
+.url-pill { flex: 1; padding: 0.4rem 0.8rem; border: 2px solid #aaa; border-radius: 999px; background: #fff; font-size: 0.9rem; }
+.ext-controls { display: flex; align-items: center; gap: 10px; }
+.ext-logo { width: 34px; height: 34px; object-fit: contain; }
+.ext-logo-btn { display: grid; place-items: center; background: transparent; border: 0; cursor: pointer; padding: 0; }
+.ext-puzzle { background: transparent; border: 0; cursor: pointer; font-size: 20px; line-height: 1; padding: 4px; }
 
 .llm-main {
   margin-top: 0;
@@ -101,267 +126,218 @@ body {
   overflow: hidden;
 }
 
-.llm-brand {
-  padding: 0.9rem 1.1rem;
-  border-bottom: 2px solid #dadada;
-  font-size: 1.15rem;
-  font-weight: 700;
-}
+.llm-brand { padding: 0.9rem 1.1rem; border-bottom: 2px solid #dadada; font-size: 1.15rem; font-weight: 700; }
+.llm-center { width: min(760px, 94%); margin: 8vh auto 0; text-align: center; }
 
-.llm-center {
-  width: min(760px, 94%);
-  margin: 8vh auto 0;
-  text-align: center;
-}
+h1 { margin-bottom: 1rem; font-size: clamp(1.6rem, 4.5vw, 2.5rem); font-family: 'Arial Black', Impact, sans-serif; letter-spacing: 0.03em; }
 
-h1 {
-  margin-bottom: 1rem;
-  font-size: clamp(1.6rem, 4.5vw, 2.5rem);
-  font-family: 'Arial Black', Impact, sans-serif;
-  letter-spacing: 0.03em;
-}
+.llm-form { display: flex; gap: 0.5rem; }
+.llm-form input { flex: 1; border: 3px solid var(--border); border-radius: 999px; padding: 0.8rem 1rem; font-size: 1rem; }
+.llm-form button, .secondary-btn { border: 3px solid var(--border); border-radius: 12px; background: #fcbd80; color: #3d261d; font-weight: 700; cursor: pointer; padding: 0.7rem 1rem; }
+.llm-form button:active, .secondary-btn:active { transform: translateY(1px); }
 
-.llm-form {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.llm-form input {
-  flex: 1;
-  border: 3px solid var(--border);
-  border-radius: 999px;
-  padding: 0.8rem 1rem;
-  font-size: 1rem;
-}
-
-.llm-form button,
-.secondary-btn {
-  border: 3px solid var(--border);
-  border-radius: 12px;
-  background: #fcbd80;
-  color: #3d261d;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 0.7rem 1rem;
-}
-
-.llm-form button:active,
-.secondary-btn:active {
-  transform: translateY(1px);
-}
-
-.chat-log {
-  margin-top: 1rem;
-  text-align: left;
-  max-height: 34vh;
-  overflow: auto;
-}
-
-.msg {
-  border: 2px solid #b7b7b7;
-  background: #fff;
-  border-radius: 8px;
-  padding: 0.65rem;
-  margin-top: 0.55rem;
-}
-
-.msg.user {
-  border-color: #7fd4fa;
-}
+.chat-log { margin-top: 1rem; text-align: left; max-height: 34vh; overflow: auto; }
+.msg { border: 2px solid #b7b7b7; background: #fff; border-radius: 8px; padding: 0.65rem; margin-top: 0.55rem; }
+.msg.user { border-color: #7fd4fa; }
 
 .extension {
-  position: absolute;
-  top: 100%;
-  right: 0.75rem;
-  width: min(420px, 94vw);
-  border: 4px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg);
-  overflow: hidden;
-  z-index: 50;
+  position: absolute; top: 100%; right: 0.75rem;
+  width: min(420px, 94vw); border: 4px solid var(--border);
+  border-radius: 12px; background: var(--bg); overflow: hidden; z-index: 50;
 }
 
 .extension-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  padding: 0.75rem;
-  background: var(--panel);
-  border-bottom: 3px solid var(--border);
+  display: flex; justify-content: space-between; align-items: start;
+  padding: 0.75rem; background: var(--panel); border-bottom: 3px solid var(--border);
 }
+.extension-head p { margin: 0.2rem 0 0; font-size: 0.78rem; }
+.extension-head strong { font-family: 'Pixelify Sans', monospace; font-weight: 400; font-synthesis: none; line-height: 1; font-size: 2rem; }
 
-.extension-head p {
-  margin: 0.2rem 0 0;
-  font-size: 0.78rem;
-}
+.icon-btn { border: 2px solid var(--border); background: #fff; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; }
+.panel { display: none; padding: 0.55rem; }
+.panel.active { display: block; }
 
-.extension-head strong {
-  font-size:1rem;
-  font-family: 'Pixelify Sans', monospace;
-  font-weight: 400;        /* critical: prevent <strong> from forcing 700 */
-  font-synthesis: none;    /* critical: don't fake bold/italic */
-  line-height: 1;
-  font-size: 2rem;
-}
+.status-row { display: flex; gap: 0.4rem; }
+.badge { flex: 1; text-align: center; border: 2px solid var(--border); border-radius: 10px; padding: 0.35rem; font-size: 0.82rem; }
+.badge.humans { background: #d9f7ff; }
+.badge.robots { background: #ffdcd5; }
 
-.icon-btn {
-  border: 2px solid var(--border);
-  background: #fff;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  cursor: pointer;
-}
+.arena { margin-top: 0.6rem; border: 3px solid var(--border); border-radius: 10px; overflow: hidden; padding: 0 0 0.4rem; }
 
-.panel {
-  display: none;
-  padding: 0.75rem;
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   TUG-OF-WAR TRACK
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-.panel.active {
-  display: block;
-}
-
-.status-row {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.badge {
-  flex: 1;
-  text-align: center;
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  padding: 0.35rem;
-  font-size: 0.82rem;
-}
-
-.badge.humans {
-  background: #d9f7ff;
-}
-
-.badge.robots {
-  background: #ffdcd5;
-}
-
-.arena {
-  margin-top: 0.6rem;
-  border: 3px solid var(--border);
-  border-radius: 10px;
-  background: linear-gradient(180deg, #b3f4ff, #fdfbec);
-  padding: 0.55rem;
-}
-
-.arena-track {
+.tug-track {
   position: relative;
-  height: 110px;
-  border: 2px solid #6d6d6d;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #e8f9ff, #ffffff);
+  height: var(--tug-track-height);
   overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background: #87ceeb;
 }
 
-.arena-pit {
+.tug-bg {
   position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-  width: 95px;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  background: repeating-linear-gradient(45deg, #ff6f1f, #ff6f1f 8px, #ffd34c 8px, #ffd34c 16px);
-  font-weight: 900;
-  color: #5d2e1c;
-  display: grid;
-  place-items: center;
-  border-left: 2px solid #a93d0f;
-  border-right: 2px solid #a93d0f;
+  object-fit: cover;
+  object-position: center var(--tug-crop-y);
   z-index: 1;
 }
 
-.character-strip {
+/*
+  Rope and robot are 1200×1200 source images with black backgrounds.
+  mix-blend-mode: screen makes black pixels transparent automatically.
+  object-position: center <--tug-crop-y> crops to the character zone.
+*/
+.tug-sprite {
   position: absolute;
-  bottom: 8px;
-  left: 50%;
-  width: min(340px, 86%);
-  height: auto;
-  transform: translateX(-50%);
-  transition: transform 0.35s ease-out;
-  image-rendering: pixelated;
-  z-index: 2;
-}
-
-.arena-caption {
-  font-size: 0.8rem;
-  margin-top: 0.4rem;
-}
-
-.feedback {
-  margin-top: 0.55rem;
-  border: 2px dashed #7c7c7c;
-  border-radius: 10px;
-  padding: 0.55rem;
-  font-size: 0.86rem;
-  background: #fff;
-}
-
-.feedback.good {
-  border-color: var(--green);
-  background: #edfff2;
-}
-
-.feedback.bad {
-  border-color: var(--red);
-  background: #fff2f2;
-}
-
-.template-wrap,
-.field-row {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 0.65rem;
-  font-size: 0.85rem;
-}
-
-.template-wrap select,
-.field-row select,
-.field-row input {
+  inset: 0;
   width: 100%;
-  border: 2px solid #818181;
-  border-radius: 8px;
-  padding: 0.45rem;
-  background: #fff;
+  height: 100%;
+  object-fit: cover;
+  object-position: center var(--tug-crop-y);
+  image-rendering: pixelated;
+  mix-blend-mode: normal;
+  transition: transform 0.35s ease-out;
 }
 
-.result {
-  margin-top: 0.7rem;
-  border: 3px solid var(--border);
-  border-radius: 10px;
-  background: #fff;
-  padding: 0.75rem;
-  font-weight: 700;
+/* Rope: nudged by --tug-rope-nudge-x, balance drift applied via inline style */
+.tug-rope {
+  z-index: 5;
+  opacity: var(--tug-rope-opacity);
+  /* The inline transform from App.tsx is: translateX(ropeDrift px)
+     Add the nudge on top using a margin trick via translate property */
+  margin-left: var(--tug-rope-nudge-x);
 }
 
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0.55rem 0;
+/* Robot: nudged by --tug-robot-nudge-x, balance drift applied via inline style */
+.tug-robot {
+  z-index: 3;
+  opacity: var(--tug-robot-opacity);
+  margin-left: var(--tug-robot-nudge-x);
 }
+
+/*
+  Avatar SVG — the player's character, sits where the human sprite was.
+  --tug-avatar-left   = 18.5%  (human body centre in the 1200px source image)
+  --tug-avatar-bottom = 20%    (feet sit on the ground line)
+
+  Inline style from App.tsx:
+    transform: translateX(calc(-50% + <humanDrift>px))
+  The -50% centres the avatar on its left anchor point.
+*/
+.tug-avatar {
+  position: absolute;
+  left: var(--tug-avatar-left);
+  bottom: var(--tug-avatar-bottom);
+  width: var(--tug-avatar-width);
+  height: var(--tug-avatar-height);
+  z-index: 4;
+  pointer-events: none;
+  image-rendering: pixelated;
+  transition: transform 0.35s ease-out;
+}
+
+/* ── Pull animations ────────────────────────────────────────────────────────
+   anim-yank-right  Used when ROBOTS score:
+                    Human avatar gets yanked RIGHT toward the center fire pit.
+
+   anim-yank-left   Used when HUMANS score:
+                    Robot gets yanked LEFT toward the center fire pit.
+
+   The animation is an ADDITIVE offset on top of the element's current
+   translateX position. It snaps out, bounces back — like a real tug.
+*/
+
+.anim-yank-right {
+  animation: yankRight var(--tug-yank-duration) ease-in-out;
+}
+
+.anim-yank-left {
+  animation: yankLeft var(--tug-yank-duration) ease-in-out;
+}
+
+@keyframes yankRight {
+  0%   { translate: 0px 0px; }
+  25%  { translate: var(--tug-yank-distance) 0px; }   /* yanked hard right */
+  60%  { translate: calc(var(--tug-yank-distance) * 0.3) 0px; } /* bounce */
+  100% { translate: 0px 0px; }                        /* settle back */
+}
+
+@keyframes yankLeft {
+  0%   { translate: 0px 0px; }
+  25%  { translate: calc(var(--tug-yank-distance) * -1) 0px; } /* yanked hard left */
+  60%  { translate: calc(var(--tug-yank-distance) * -0.3) 0px; }
+  100% { translate: 0px 0px; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+.arena-caption { font-size: 0.8rem; margin-top: 0.4rem; }
+
+.feedback { margin-top: 0.55rem; border: 2px dashed #7c7c7c; border-radius: 10px; padding: 0.55rem; font-size: 0.86rem; background: #fff; }
+.feedback.good { border-color: var(--green); background: #edfff2; }
+.feedback.bad  { border-color: var(--red);   background: #fff2f2; }
+
+.template-wrap, .field-row { display: grid; gap: 0.35rem; margin-top: 0.65rem; font-size: 0.85rem; }
+.template-wrap select, .field-row select, .field-row input { width: 100%; border: 2px solid #818181; border-radius: 8px; padding: 0.45rem; background: #fff; }
+
+.result { margin-top: 0.7rem; border: 3px solid var(--border); border-radius: 10px; background: #fff; padding: 0.75rem; font-weight: 700; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; margin: 0.55rem 0; }
+
+.onboarding { max-height: none; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.45rem; padding: 0.6rem 0.7rem; }
+.onboarding h2 { margin: 0; font-family: 'Pixelify Sans', monospace; font-size: 1.7rem; line-height: 1.05; }
+.onboarding h3 { margin: 0; font-size: 1rem; line-height: 1.2; }
+.onboarding-subtitle { margin: 0; font-size: 0.95rem; font-weight: 700; }
+.onboarding p { margin: 0; font-size: 0.85rem; line-height: 1.2; }
+.onboarding-actions { display: flex; gap: 0.5rem; justify-content: center; }
+.onboarding .field-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 0.3rem; font-size: 0.85rem; }
+.onboarding .field-row select { width: 160px; padding: 0.35rem 0.45rem; border-radius: 8px; }
+.onboarding-error { margin: 0; border: 2px dashed var(--red); border-radius: 10px; background: #fff2f2; padding: 0.5rem; }
+
+.play-btn { border: 3px solid var(--border); border-radius: 12px; background: var(--green); color: #0e2213; font-weight: 700; cursor: pointer; padding: 0.7rem 1.2rem; }
+
+.session-nudge { position: absolute; top: calc(100% + 8px); right: 0.75rem; width: min(360px, 92vw); border: 3px solid var(--border); border-radius: 12px; background: #fff; padding: 0.7rem; z-index: 40; }
+.session-nudge p { margin: 0; font-size: 0.9rem; }
+.session-nudge-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
 
 @media (max-width: 980px) {
-  .extension {
-    position: static;
-    margin: 1rem auto 0;
-    width: min(720px, 100%);
-  }
-
-  .llm-main {
-    height: auto;
-    min-height: 58vh;
-  }
-
-  .chat-log {
-    max-height: 22vh;
-    margin-bottom: 1rem;
-  }
+  .session-nudge { position: static; margin: 0.6rem auto 0; width: min(720px, 100%); }
+  .extension { width: min(360px, 92vw); border: 3px solid var(--border); border-radius: 12px; background: var(--bg); }
+  .llm-main { height: auto; min-height: 58vh; }
+  .chat-log { max-height: 22vh; margin-bottom: 1rem; }
 }
+
+/* ── Settings ── */
+.settings-heading { margin: 0; font-family: 'Pixelify Sans', monospace; font-size: 1.3rem; font-weight: 400; font-synthesis: none; }
+.settings-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+
+.avatar-profile-card { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 2px solid var(--border); border-radius: 10px; background: var(--panel); padding: 5px 8px 4px; cursor: pointer; transition: transform 0.1s; }
+.avatar-profile-card:hover { transform: scale(1.04); }
+.avatar-card-label { font-size: 0.65rem; font-weight: 700; color: var(--border); letter-spacing: 0.03em; text-transform: uppercase; }
+
+.avatar-editor-panel { padding: 0.55rem; }
+.avatar-editor-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+.avatar-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.55rem; }
+
+.avatar-preview-box { border: 2px solid var(--border); border-radius: 10px; background: var(--panel); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; padding: 0.55rem 0.4rem; }
+.avatar-preview-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #5a3a2a; }
+.avatar-preview-img { image-rendering: pixelated; border: 2px solid var(--border); border-radius: 8px; overflow: hidden; line-height: 0; }
+.avatar-preview-name { font-size: 0.75rem; font-weight: 700; font-family: 'Pixelify Sans', monospace; font-synthesis: none; }
+
+.avatar-grid-box { border: 2px solid var(--border); border-radius: 10px; background: #fffdf5; padding: 6px; display: flex; align-items: center; justify-content: center; }
+.avatar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 100%; }
+.avatar-grid-cell { display: block; border: 2px solid #bbb; border-radius: 6px; padding: 0; cursor: pointer; background: transparent; line-height: 0; image-rendering: pixelated; aspect-ratio: 1; width: 100%; overflow: hidden; transition: border-color 0.1s, transform 0.1s; }
+.avatar-grid-cell:hover { border-color: var(--border); transform: scale(1.06); }
+.avatar-grid-cell.selected { border: 3px solid var(--border); box-shadow: 0 0 0 2px #fcbd80; }
+
+.avatar-section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #5a3a2a; margin-bottom: 0.3rem; }
+.avatar-color-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 3px; }
+.avatar-color-swatch { width: 36px; height: 36px; border: 2px solid #aaa; border-radius: 8px; cursor: pointer; display: grid; grid-template-rows: 1fr 1fr; overflow: hidden; padding: 0; transition: transform 0.1s, border-color 0.1s; }
+.avatar-color-swatch span { display: block; width: 100%; }
+.avatar-color-swatch:hover { transform: scale(1.1); border-color: var(--border); }
+.avatar-color-swatch.selected { border: 3px solid var(--border); box-shadow: 0 0 0 2px #fcbd80; }
+.avatar-palette-label { font-size: 0.72rem; color: #555; margin-bottom: 0.4rem; font-style: italic; }
+.avatar-actions { display: flex; justify-content: space-between; gap: 0.4rem; margin-top: 0.3rem; }
