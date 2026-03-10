@@ -27,6 +27,19 @@
 
   --radius: 4px;
   --radius-sm: 2px;
+  
+  --tug-track-height: 200px;
+  --tug-crop-y: 80%;
+  --tug-avatar-left: 18.5%;
+  --tug-avatar-bottom: 37%;
+  --tug-avatar-width: 52px;
+  --tug-avatar-height: 64px;
+  --tug-robot-nudge-x: 0px;
+  --tug-rope-nudge-x: 0px;
+  --tug-robot-opacity: 1;
+  --tug-rope-opacity: 1;
+  --tug-yank-distance: 18px;
+  --tug-yank-duration: 0.5s;
 }
 
 /* ── Base ───────────────────────────────────────── */
@@ -369,35 +382,105 @@ h1 {
   border-radius: var(--radius-sm);
   background: linear-gradient(180deg, #e0f5ff, #fdfbec);
   overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background: #87ceeb;
 }
 
-.arena-pit {
+.tug-bg {
   position: absolute;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-  width: 76px;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  background: repeating-linear-gradient(45deg, #ff5c00, #ff5c00 6px, #ffcc00 6px, #ffcc00 12px);
-  font-family: 'Pixelify Sans', monospace;
-  font-weight: 700;
-  font-size: 0.62rem;
-  color: #fff;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
-  display: grid;
-  place-items: center;
-  border-left: 2px solid #a93d0f;
-  border-right: 2px solid #a93d0f;
+  object-fit: cover;
+  object-position: center center;
   z-index: 1;
 }
 
-.character-strip {
+.tug-track {
+  position: relative;
+  height: var(--tug-track-height);
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background: #87ceeb;
+}
+
+.tug-bg {
   position: absolute;
-  bottom: 8px;
-  left: 50%;
-  width: min(340px, 86%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center var(--tug-crop-y);
+  z-index: 1;
+}
+
+.tug-rope {
+  z-index: 5;
+  opacity: var(--tug-rope-opacity);
+  margin-left: var(--tug-rope-nudge-x);
+  transform: translateY(4px);
+}
+
+.tug-robot {
+  position: absolute;
+  right: 6%;
+  bottom: 1%;
+  width: 275px;
   height: auto;
-  transform: translateX(-50%);
+  z-index: 3;
+  image-rendering: pixelated;
+  transition: transform 0.35s ease-out;
+  pointer-events: none;
+}
+
+.tug-avatar {
+  position: absolute;
+  left: var(--tug-avatar-left);
+  bottom: var(--tug-avatar-bottom);
+  width: var(--tug-avatar-width);
+  height: var(--tug-avatar-height);
+  z-index: 4;
+  pointer-events: none;
+  image-rendering: pixelated;
+  transition: transform 0.35s ease-out;
+}
+
+.anim-yank-right {
+  animation: yankRight var(--tug-yank-duration) ease-in-out;
+}
+
+.anim-yank-left {
+  animation: yankLeft var(--tug-yank-duration) ease-in-out;
+}
+
+@keyframes yankRight {
+  0%   { translate: 0px 0px; }
+  25%  { translate: var(--tug-yank-distance) 0px; }
+  60%  { translate: calc(var(--tug-yank-distance) * 0.3) 0px; }
+  100% { translate: 0px 0px; }
+}
+
+@keyframes yankLeft {
+  0%   { translate: 0px 0px; }
+  25%  { translate: calc(var(--tug-yank-distance) * -1) 0px; }
+  60%  { translate: calc(var(--tug-yank-distance) * -0.3) 0px; }
+  100% { translate: 0px 0px; }
+}
+
+/*
+  Rope and robot are 1200×1200 source images with black backgrounds.
+  mix-blend-mode: screen makes black pixels transparent automatically.
+  object-position: center <--tug-crop-y> crops to the character zone.
+*/
+.tug-sprite {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center var(--tug-crop-y);
+  image-rendering: pixelated;
+  mix-blend-mode: normal;
   transition: transform 0.35s ease-out;
   image-rendering: pixelated;
   z-index: 2;
@@ -674,58 +757,6 @@ h1 {
   border-radius: var(--radius-sm);
 }
 
-.how-it-works-list {
-  text-align: left;
-  margin: 0.1rem 0;
-  padding-left: 0;
-  list-style: none;
-  font-size: 0.83rem;
-  line-height: 1.5;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  color: #444;
-  width: 100%;
-}
-
-.how-it-works-list li {
-  padding: 0.3rem 0.5rem;
-  border-left: 3px solid var(--yellow);
-  background: rgba(245, 200, 64, 0.12);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-}
-
-.avatar-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  margin: 0.2rem 0;
-}
-
-.avatar-btn {
-  font-size: 1.75rem;
-  line-height: 1;
-  padding: 0.45rem;
-  border: 2.5px solid #c5bfb5;
-  border-radius: var(--radius-sm);
-  background: #fff;
-  cursor: pointer;
-  box-shadow: var(--px-shadow-xs);
-  transition: border-color 0.1s, background 0.1s, box-shadow 0.07s, transform 0.07s;
-}
-
-.avatar-btn:hover {
-  border-color: var(--border);
-  transform: translateY(-2px);
-}
-
-.avatar-btn.selected {
-  border-color: var(--border);
-  background: var(--panel);
-  box-shadow: none;
-  transform: translate(2px, 2px);
-}
-
 .onboarding-error {
   margin: 0;
   border: 2px solid var(--red);
@@ -902,6 +933,205 @@ h1 {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.55rem;
+}
+
+/* ── Settings + Avatar Editor ───────────────────── */
+
+.settings-heading {
+  margin: 0;
+  font-family: 'Pixelify Sans', monospace;
+  font-size: 1.3rem;
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+.settings-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.avatar-profile-card {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 6px 10px 5px;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.avatar-profile-card:hover {
+  transform: scale(1.04);
+}
+
+.avatar-card-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--border);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.avatar-editor-panel {
+  padding: 0.55rem;
+}
+
+.avatar-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.avatar-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.avatar-preview-box {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0.55rem 0.4rem;
+}
+
+.avatar-preview-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #5a3a2a;
+}
+
+.avatar-preview-img {
+  image-rendering: pixelated;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.avatar-preview-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Pixelify Sans', monospace;
+  font-synthesis: none;
+}
+
+.avatar-grid-box {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: #fffdf5;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.avatar-grid-cell {
+  display: block;
+  border: 2px solid #bbb;
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  line-height: 0;
+  image-rendering: pixelated;
+  aspect-ratio: 1;
+  width: 100%;
+  overflow: hidden;
+  transition: border-color 0.1s, transform 0.1s;
+}
+
+.avatar-grid-cell:hover {
+  border-color: var(--border);
+  transform: scale(1.06);
+}
+
+.avatar-grid-cell.selected {
+  border: 3px solid var(--border);
+  box-shadow: 0 0 0 2px #fcbd80;
+}
+
+.avatar-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #5a3a2a;
+  margin-bottom: 0.3rem;
+}
+
+.avatar-color-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.avatar-color-swatch {
+  width: 36px;
+  height: 36px;
+  border: 2px solid #aaa;
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  overflow: hidden;
+  padding: 0;
+  transition: transform 0.1s, border-color 0.1s;
+}
+
+.avatar-color-swatch span {
+  display: block;
+  width: 100%;
+}
+
+.avatar-color-swatch:hover {
+  transform: scale(1.1);
+  border-color: var(--border);
+}
+
+.avatar-color-swatch.selected {
+  border: 3px solid var(--border);
+  box-shadow: 0 0 0 2px #fcbd80;
+}
+
+.avatar-palette-label {
+  font-size: 0.72rem;
+  color: #555;
+  margin-bottom: 0.4rem;
+  font-style: italic;
+}
+
+.avatar-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
 }
 
 /* ── Responsive ─────────────────────────────────── */

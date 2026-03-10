@@ -1,10 +1,11 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import charactersDefaultImage from './images/characters_default.png';
-import humansPullImage from './images/humans_pull.png';
-import robotsPullImage from './images/robots_pull.png';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import extensionLogo from './images/logo.png';
-import Onboarding, { AVATARS } from './Onboarding';
+import arenaBg from './images/background.jpg';
+import robotImage from './images/robot.png';
+import ropeImage from './images/rope.png';
+import Onboarding from './Onboarding';
 import Settings from './Settings';
+import AvatarEditor, { AvatarConfig, AvatarDisplay } from './AvatarEditor';
 import Stats, { GameRecord } from './Stats';
 import Leaderboard from './Leaderboard';
 
@@ -12,18 +13,9 @@ import Leaderboard from './Leaderboard';
 type Difficulty = 'relaxed' | 'normal' | 'strict';
 type MessageRole = 'user' | 'system';
 type FeedbackTone = 'neutral' | 'good' | 'bad';
-type ViewMode = 'game' | 'settings' | 'stats' | 'leaderboard';
-
-type ChatMessage = {
-  role: MessageRole;
-  text: string;
-};
-
-type RoundScore = {
-  intentional: boolean;
-  message: string;
-  suggestion: string;
-};
+type ViewMode = 'game' | 'settings' | 'stats' | 'leaderboard' | 'avatar';
+type ChatMessage = { role: MessageRole; text: string };
+type RoundScore = { intentional: boolean; message: string; suggestion: string };
 
 type CharacterFrame = 'default' | 'humansPull' | 'robotsPull';
 
@@ -32,7 +24,7 @@ type StoredPrefs = {
   alwaysOn: boolean;
   promptPermission: boolean;
   difficulty: Difficulty;
-  avatar?: string;
+  avatarConfig?: AvatarConfig;
 };
 
 const MAX_POINTS = 10;
@@ -58,8 +50,8 @@ function saveHistory(records: GameRecord[]) {
 
 const difficultyConfig: Record<Difficulty, { minGoodScore: number; humanGain: number; robotGain: number }> = {
   relaxed: { minGoodScore: 4, humanGain: 2, robotGain: 1 },
-  normal: { minGoodScore: 6, humanGain: 2, robotGain: 2 },
-  strict: { minGoodScore: 8, humanGain: 2, robotGain: 3 },
+  normal:  { minGoodScore: 6, humanGain: 2, robotGain: 2 },
+  strict:  { minGoodScore: 8, humanGain: 2, robotGain: 3 },
 };
 
 const templates = [
@@ -107,7 +99,6 @@ function readStoredPrefs(): StoredPrefs | null {
 function scorePrompt(prompt: string, level: Difficulty): RoundScore {
   const lowered = prompt.toLowerCase();
   let score = 0;
-
   if (prompt.length > 35) score += 2;
   if (prompt.length > 80) score += 1;
   if (/[?]/.test(prompt)) score += 1;
@@ -116,9 +107,7 @@ function scorePrompt(prompt: string, level: Difficulty): RoundScore {
   if (/\bjust|answer only|do it for me|copy|paste|homework answer|solve this\b/.test(lowered)) score -= 3;
   if (/^\s*(answer|solve|do)\b/.test(lowered)) score -= 2;
   if (prompt.split(' ').length < 6) score -= 2;
-
   const intentional = score >= difficultyConfig[level].minGoodScore;
-
   return {
     intentional,
     message: intentional
@@ -129,6 +118,67 @@ function scorePrompt(prompt: string, level: Difficulty): RoundScore {
       : 'Try adding your goal, what you already tried, and ask for guidance instead of a full answer.',
   };
 }
+
+const PX_PER_POINT = 8;
+
+type TugArenaProps = {
+  avatarConfig: AvatarConfig;
+  balance: number;
+  characterFrame: CharacterFrame;
+};
+
+function TugArena({ avatarConfig, balance, characterFrame }: TugArenaProps) {
+  const WINNER_DRIFT = PX_PER_POINT * 0.35;
+  const LOSER_DRIFT = PX_PER_POINT * 1.2;
+
+  let humanDrift = 0;
+  let robotDrift = 0;
+
+  if (balance > 0) {
+    // robots winning
+    humanDrift = balance * LOSER_DRIFT;
+    robotDrift = balance * WINNER_DRIFT;
+  } else if (balance < 0) {
+    // humans winning
+    humanDrift = balance * WINNER_DRIFT;
+    robotDrift = balance * LOSER_DRIFT;
+  }
+
+  const ropeDrift = (humanDrift + robotDrift) / 2;
+
+  const robotYanked = characterFrame === 'humansPull';
+  const humanYanked = characterFrame === 'robotsPull';
+
+  return (
+    <div className="tug-track">
+      <img src={arenaBg} className="tug-bg" alt="" aria-hidden />
+
+      <img
+        src={ropeImage}
+        className="tug-sprite tug-rope"
+        style={{ transform: `translate(${ropeDrift}px, -8px)` }}
+        alt=""
+        aria-hidden
+      />
+
+      <img
+        src={robotImage}
+        className={`tug-robot${robotYanked ? ' anim-yank-left' : ''}`}
+        style={{ transform: `translateX(${robotDrift}px)` }}
+        alt="Robot"
+      />
+
+    <div
+      className={`tug-avatar${humanYanked ? ' anim-yank-right' : ''}`}
+      style={{ transform: `translateX(calc(-50% + ${humanDrift}px))` }}
+    >
+      <AvatarDisplay config={avatarConfig} width={52} height={64} />
+    </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const storedPrefs = readStoredPrefs();
@@ -148,7 +198,6 @@ export default function App() {
   const [onboardingComplete, setOnboardingComplete] = useState(initialOnboardingComplete);
   const [sessionActive, setSessionActive] = useState(initialAlwaysOn);
   const [sessionPromptDismissed, setSessionPromptDismissed] = useState(false);
-  const [avatar, setAvatar] = useState(storedPrefs?.avatar ?? AVATARS[0]);
   const [isExtensionOpen, setIsExtensionOpen] = useState(!initialOnboardingComplete || initialAlwaysOn);
 
   const [history, setHistory] = useState<GameRecord[]>(readHistory);
@@ -158,27 +207,16 @@ export default function App() {
   const [humans, setHumans] = useState(0);
   const [robots, setRobots] = useState(0);
   const [feedbackTone, setFeedbackTone] = useState<FeedbackTone>('neutral');
-  const [feedbackText, setFeedbackText] = useState(
-    'Submit a prompt. Low-effort prompts help robots, thoughtful prompts help humans.',
-  );
+  const [feedbackText, setFeedbackText] = useState('Submit a prompt. Low-effort prompts help robots, thoughtful prompts help humans.');
   const [showTemplates, setShowTemplates] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [resultText, setResultText] = useState('');
+  const [gameOver, setGameOver]         = useState(false);
+  const [resultText, setResultText]     = useState('');
   const [characterFrame, setCharacterFrame] = useState<CharacterFrame>('default');
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>({ baseId: 'spiky', colorScheme: 'classic' });
   const pullTimeoutRef = useRef<number | null>(null);
 
   const effectiveAlwaysOn = allowAlwaysOn && alwaysOn;
   const balance = robots - humans;
-  const characterStyle = useMemo(
-    () => ({ transform: `translate(-50%, 105px) translateX(${balance * 7}px)` }),
-    [balance],
-  );
-  const characterImage =
-    characterFrame === 'humansPull'
-      ? humansPullImage
-      : characterFrame === 'robotsPull'
-        ? robotsPullImage
-        : charactersDefaultImage;
 
   const showSessionPrompt =
     onboardingComplete && !effectiveAlwaysOn && !sessionActive && !isExtensionOpen && !sessionPromptDismissed;
@@ -193,26 +231,26 @@ export default function App() {
 
   useEffect(() => {
     if (!onboardingComplete) return;
-    const toStore: StoredPrefs = {
-      onboardingComplete: true,
-      alwaysOn: effectiveAlwaysOn,
-      promptPermission,
-      difficulty,
-      avatar,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
-  }, [difficulty, effectiveAlwaysOn, onboardingComplete, promptPermission, avatar]);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        onboardingComplete: true,
+        alwaysOn: effectiveAlwaysOn,
+        promptPermission,
+        difficulty,
+        avatarConfig,
+      }),
+    );
+  }, [difficulty, effectiveAlwaysOn, onboardingComplete, promptPermission, avatarConfig]);
 
   function flashPullFrame(winner: 'humans' | 'robots') {
-    if (pullTimeoutRef.current !== null) {
-      window.clearTimeout(pullTimeoutRef.current);
-    }
-
+    if (pullTimeoutRef.current !== null) window.clearTimeout(pullTimeoutRef.current);
     setCharacterFrame(winner === 'humans' ? 'humansPull' : 'robotsPull');
     pullTimeoutRef.current = window.setTimeout(() => {
       setCharacterFrame('default');
       pullTimeoutRef.current = null;
-    }, 1000);
+    }, 600);
   }
 
   function addMessage(role: MessageRole, text: string) {
@@ -258,42 +296,21 @@ export default function App() {
     setFeedbackTone('neutral');
     setFeedbackText('New round started. Send a prompt to shift the balance.');
     setCharacterFrame('default');
+
     if (pullTimeoutRef.current !== null) {
       window.clearTimeout(pullTimeoutRef.current);
       pullTimeoutRef.current = null;
     }
   }
 
-  function onTemplateChange(value: string) {
-    if (!value) return;
-    setPrompt(value);
-  }
-
-  function onLogoClick() {
-    setIsExtensionOpen((prev) => {
-      const next = !prev;
-      if (next && !effectiveAlwaysOn) {
-        setSessionActive(true);
-        setSessionPromptDismissed(true);
-      }
-      return next;
-    });
-    setView('game');
-  }
-
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     if (gameOver) return;
-
     const nextPrompt = prompt.trim();
     if (!nextPrompt) return;
-
     addMessage('user', nextPrompt);
 
-    const extensionActive =
-      onboardingComplete && isExtensionOpen && promptPermission && (effectiveAlwaysOn || sessionActive);
-
+    const extensionActive = onboardingComplete && isExtensionOpen && promptPermission && (effectiveAlwaysOn || sessionActive);
     if (!extensionActive) {
       addMessage('system', 'Extension is off for this session. Prompt sent without scoring.');
       setPrompt('');
@@ -305,7 +322,6 @@ export default function App() {
 
     let nextHumans = humans;
     let nextRobots = robots;
-
     let nextIntentional = roundIntentional;
     let nextLowEffort = roundLowEffort;
 
@@ -338,13 +354,12 @@ export default function App() {
     setPrompt('');
   }
 
-  function onCompleteOnboarding(result: { alwaysOn: boolean; difficulty: Difficulty; promptPermission: true; avatar: string }) {
+  function onCompleteOnboarding(result: { alwaysOn: boolean; difficulty: Difficulty; promptPermission: true }) {
     const nextAlwaysOn = allowAlwaysOn ? result.alwaysOn : false;
 
     setAlwaysOn(nextAlwaysOn);
     setDifficulty(result.difficulty);
     setPromptPermission(result.promptPermission);
-    setAvatar(result.avatar);
     setOnboardingComplete(true);
     setSessionPromptDismissed(false);
 
@@ -366,22 +381,29 @@ export default function App() {
     setSessionPromptDismissed(false);
   }
 
-  const ropeCaption =
-    balance === 0
+  function onLogoClick() {
+    setIsExtensionOpen((prev) => {
+      const next = !prev;
+      if (next && !effectiveAlwaysOn) {
+        setSessionActive(true);
+        setSessionPromptDismissed(true);
+      }
+      return next;
+    });
+    setView('game');
+  }
+
+  const ropeCaption = balance === 0
       ? 'Tied match over the lava pit.'
       : balance > 0
-        ? 'Humans are pulling ahead with mindful prompts.'
-        : 'Robots are pulling ahead from low-effort prompting.';
+        ? 'Robots are pulling ahead from low-effort prompting.'
+        : 'Humans are pulling ahead with mindful prompts.';
 
   return (
     <div className="site-shell">
       <div className="browser-top">
         <header className="fake-browser-bar">
-          <div className="browser-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+          <div className="browser-dots"><span /><span /><span /></div>
           <div className="url-pill">https://some-llm-site.local</div>
           <div className="ext-controls">
             <button
@@ -433,9 +455,11 @@ export default function App() {
                 <div className="extension-head">
                   <div>
                     <strong>Clanker Clash</strong>
-                    <p className="extension-avatar">{avatar} You</p>
                   </div>
                   <div className="extension-head-btns">
+                    <div style={{ cursor: 'pointer' }} onClick={() => setView('settings')}>
+                      <AvatarDisplay config={avatarConfig} width={26} height={32} />
+                    </div>
                     <button className="icon-btn" title="Leaderboard" onClick={() => setView('leaderboard')}>
                       ★
                     </button>
@@ -459,28 +483,23 @@ export default function App() {
                   </div>
 
                   <div className="arena" aria-label="Tug of war arena">
-                    <div className="arena-track">
-                      <div className="arena-pit">LAVA</div>
-                      <img
-                        src={characterImage}
-                        alt="Humans and robots tug-of-war"
-                        className="character-strip"
-                        style={characterStyle}
-                      />
-                    </div>
-                    <div className={`arena-caption ${feedbackTone}`}>
-                      {feedbackText || ropeCaption}
-                    </div>
+                    <TugArena avatarConfig={avatarConfig} balance={balance} characterFrame={characterFrame} />
+                    <div className={`arena-caption ${feedbackTone}`}>{feedbackText || ropeCaption}</div>
                   </div>
 
                   {showTemplates && (
                     <label className="template-wrap">
                       Intentional prompt templates
-                      <select defaultValue="" onChange={(event) => onTemplateChange(event.target.value)}>
+                      <select
+                        defaultValue=""
+                        onChange={(e) => {
+                          if (e.target.value) setPrompt(e.target.value);
+                        }}
+                      >
                         <option value="">Select a template...</option>
-                        {templates.map((template) => (
-                          <option key={template.label} value={template.value}>
-                            {template.label}
+                        {templates.map((t) => (
+                          <option key={t.label} value={t.value}>
+                            {t.label}
                           </option>
                         ))}
                       </select>
@@ -504,10 +523,12 @@ export default function App() {
                   alwaysOn={alwaysOn}
                   difficulty={difficulty}
                   music={music}
+                  avatarConfig={avatarConfig}
                   onAlwaysOnChange={onAlwaysOnChange}
                   onDifficultyChange={setDifficulty}
                   onMusicChange={setMusic}
                   onBack={() => setView('game')}
+                  onEditAvatar={() => setView('avatar')}
                 />
 
                 <Stats
@@ -515,10 +536,18 @@ export default function App() {
                   history={history}
                   onBack={() => setView('game')}
                 />
+
                 <Leaderboard
                   isActive={view === 'leaderboard'}
-                  currentAvatar={avatar}
+                  currentAvatar="You"
                   onBack={() => setView('game')}
+                />
+
+                <AvatarEditor
+                  isActive={view === 'avatar'}
+                  currentConfig={avatarConfig}
+                  onSave={setAvatarConfig}
+                  onBack={() => setView('settings')}
                 />
               </>
             )}
@@ -537,7 +566,7 @@ export default function App() {
               autoComplete="off"
               required
               value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
+              onChange={(e) => setPrompt(e.target.value)}
             />
             <button type="submit">Send</button>
           </form>

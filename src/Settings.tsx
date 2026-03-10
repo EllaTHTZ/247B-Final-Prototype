@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AvatarDisplay, AvatarConfig } from './AvatarEditor';
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
 
@@ -8,10 +9,12 @@ type SettingsProps = {
   alwaysOn: boolean;
   difficulty: Difficulty;
   music: number;
+  avatarConfig: AvatarConfig;
   onAlwaysOnChange: (checked: boolean) => void;
   onDifficultyChange: (difficulty: Difficulty) => void;
   onMusicChange: (value: number) => void;
   onBack: () => void;
+  onEditAvatar: () => void;
 };
 
 const difficultyDescriptions: Record<Difficulty, string> = {
@@ -26,10 +29,12 @@ export default function Settings({
   alwaysOn,
   difficulty,
   music,
+  avatarConfig,
   onAlwaysOnChange,
   onDifficultyChange,
   onMusicChange,
   onBack,
+  onEditAvatar,
 }: SettingsProps) {
   const [saveMessage, setSaveMessage] = useState('');
 
@@ -50,7 +55,15 @@ export default function Settings({
 
   return (
     <section className={`panel ${isActive ? 'active' : ''}`}>
-      <h2>Game Settings</h2>
+    <div className="settings-top-row">
+      <h2 className="settings-heading">Game Settings</h2>
+
+      <button className="avatar-profile-card" onClick={onEditAvatar} title="Edit Avatar">
+        <AvatarDisplay config={avatarConfig} size={52} />
+        <span className="avatar-card-label">Edit Avatar</span>
+      </button>
+    </div>
+
       {showAlwaysOn && (
         <label className="toggle-row">
           <span>Always On</span>
