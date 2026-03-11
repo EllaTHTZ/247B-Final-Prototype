@@ -585,6 +585,73 @@ h1 {
 .play-btn:hover  { background: #35b035; }
 .play-btn:active { transform: translateY(4px); box-shadow: none; }
 
+/* ── Rubric ─────────────────────────────────────── */
+
+.rubric-details {
+  margin-top: 0.45rem;
+  border: 2px solid #c5bfb5;
+  border-radius: var(--radius-sm);
+  background: #fffdf7;
+  font-size: 0.8rem;
+}
+
+.rubric-summary {
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--border);
+  list-style: none;
+  user-select: none;
+}
+
+.rubric-summary::-webkit-details-marker { display: none; }
+
+.rubric-summary::after {
+  content: ' ▸';
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.rubric-details[open] .rubric-summary::after {
+  content: ' ▾';
+}
+
+.rubric-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0.5rem;
+  border-top: 1.5px solid #e8e3da;
+  margin-top: 0.25rem;
+  padding-top: 0.4rem;
+}
+
+.rubric-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rubric-col-title {
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: 0.15rem;
+}
+
+.rubric-good .rubric-col-title { color: var(--green-dark); }
+.rubric-bad  .rubric-col-title { color: var(--red-dark); }
+
+.rubric-col ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: #555;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
 /* ── Settings panel ─────────────────────────────── */
 
 .toggle-row {

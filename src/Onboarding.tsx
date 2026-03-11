@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
-type OnboardingStep = 'landing' | 'alwaysOn' | 'permission' | 'difficulty';
+type OnboardingStep = 'landing' | 'howItWorks' | 'alwaysOn' | 'permission' | 'difficulty';
 
 type OnboardingResult = {
   alwaysOn: boolean;
@@ -26,6 +26,10 @@ export default function Onboarding({
   const [permissionError, setPermissionError] = useState('');
 
   function startSetup() {
+    setStep('howItWorks');
+  }
+
+  function afterHowItWorks() {
     setStep(showAlwaysOnQuestion ? 'alwaysOn' : 'permission');
   }
 
@@ -59,6 +63,24 @@ export default function Onboarding({
         <p>Mindful LLM Prompting Game</p>
         <button className="play-btn" onClick={startSetup}>
           Play
+        </button>
+      </section>
+    );
+  }
+
+  if (step === 'howItWorks') {
+    return (
+      <section className="onboarding">
+        <h3>How It Works</h3>
+        <ul className="how-it-works-list">
+          <li>Humans and Robots are in a <b>tug-of-war over a lava pit</b>.</li>
+          <li>You write prompts to an LLM as usual — Clanker Clash watches in the background.</li>
+          <li><b>Thoughtful prompts</b> (with context, goals, or hints) earn points for <b>Humans</b>.</li>
+          <li><b>Low-effort prompts</b> (vague, "do it for me") earn points for <b>Robots</b>.</li>
+          <li>First side to <b>10 points</b> wins the round!</li>
+        </ul>
+        <button className="play-btn" onClick={afterHowItWorks}>
+          Got it!
         </button>
       </section>
     );

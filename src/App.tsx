@@ -208,7 +208,6 @@ export default function App() {
   const [robots, setRobots] = useState(0);
   const [feedbackTone, setFeedbackTone] = useState<FeedbackTone>('neutral');
   const [feedbackText, setFeedbackText] = useState('Submit a prompt. Low-effort prompts help robots, thoughtful prompts help humans.');
-  const [showTemplates, setShowTemplates] = useState(false);
   const [gameOver, setGameOver]         = useState(false);
   const [resultText, setResultText]     = useState('');
   const [characterFrame, setCharacterFrame] = useState<CharacterFrame>('default');
@@ -291,7 +290,6 @@ export default function App() {
     setRoundIntentional(0);
     setRoundLowEffort(0);
     setGameOver(false);
-    setShowTemplates(false);
     setResultText('');
     setFeedbackTone('neutral');
     setFeedbackText('New round started. Send a prompt to shift the balance.');
@@ -332,7 +330,6 @@ export default function App() {
       setRoundIntentional(nextIntentional);
       setFeedbackTone('good');
       setFeedbackText(`${scoreData.message} ${scoreData.suggestion}`);
-      setShowTemplates(false);
       flashPullFrame('humans');
     } else {
       nextRobots = Math.min(MAX_POINTS, robots + config.robotGain);
@@ -341,7 +338,6 @@ export default function App() {
       setRoundLowEffort(nextLowEffort);
       setFeedbackTone('bad');
       setFeedbackText(`${scoreData.message} ${scoreData.suggestion}`);
-      setShowTemplates(true);
       flashPullFrame('robots');
     }
 
@@ -487,24 +483,47 @@ export default function App() {
                     <div className={`arena-caption ${feedbackTone}`}>{feedbackText || ropeCaption}</div>
                   </div>
 
-                  {showTemplates && (
-                    <label className="template-wrap">
-                      Intentional prompt templates
-                      <select
-                        defaultValue=""
-                        onChange={(e) => {
-                          if (e.target.value) setPrompt(e.target.value);
-                        }}
-                      >
-                        <option value="">Select a template...</option>
-                        {templates.map((t) => (
-                          <option key={t.label} value={t.value}>
-                            {t.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+                  <details className="rubric-details">
+                    <summary className="rubric-summary">How scoring works</summary>
+                    <div className="rubric-body">
+                      <div className="rubric-col rubric-good">
+                        <span className="rubric-col-title">+ Humans gain</span>
+                        <ul>
+                          <li>Add context, topic, or goal</li>
+                          <li>Mention what you already tried</li>
+                          <li>Ask why, how, or to compare</li>
+                          <li>Request hints or feedback</li>
+                          <li>Write 6+ words with a question</li>
+                        </ul>
+                      </div>
+                      <div className="rubric-col rubric-bad">
+                        <span className="rubric-col-title">+ Robots gain</span>
+                        <ul>
+                          <li>Very short or vague prompt</li>
+                          <li>"Just give me the answer"</li>
+                          <li>"Do it for me" / "solve this"</li>
+                          <li>Starting with only "do" or "answer"</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </details>
+
+                  <label className="template-wrap">
+                    Prompt templates
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) setPrompt(e.target.value);
+                      }}
+                    >
+                      <option value="">Select a template...</option>
+                      {templates.map((t) => (
+                        <option key={t.label} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
                   {gameOver && (
                     <div className="result">
