@@ -59,7 +59,11 @@ body {
   background-image:
     repeating-linear-gradient(0deg,  transparent, transparent 15px, rgba(255,255,255,0.035) 15px, rgba(255,255,255,0.035) 16px),
     repeating-linear-gradient(90deg, transparent, transparent 15px, rgba(255,255,255,0.035) 15px, rgba(255,255,255,0.035) 16px),
-    linear-gradient(180deg, #6bbde0 0%, #9dd8f5 40%, #c5f0e0 72%, #8ed068 100%);
+        linear-gradient(180deg,
+      rgba(107,189,224,0.45) 0%,
+      rgba(157,216,245,0.45) 40%,
+      rgba(197,240,224,0.45) 72%,
+      rgba(142,208,104,0.45) 100%);
   font-family: 'Pixelify Sans', monospace;
   color: var(--ink);
   font-size: 14px;
@@ -322,6 +326,7 @@ h1 {
 .panel {
   display: none;
   padding: 0.65rem;
+  position: relative;
 }
 
 .panel.active {
@@ -585,71 +590,18 @@ h1 {
 .play-btn:hover  { background: #35b035; }
 .play-btn:active { transform: translateY(4px); box-shadow: none; }
 
-/* ── Rubric ─────────────────────────────────────── */
-
-.rubric-details {
-  margin-top: 0.45rem;
-  border: 2px solid #c5bfb5;
-  border-radius: var(--radius-sm);
-  background: #fffdf7;
-  font-size: 0.8rem;
-}
-
-.rubric-summary {
-  padding: 0.35rem 0.55rem;
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--border);
-  list-style: none;
-  user-select: none;
-}
-
-.rubric-summary::-webkit-details-marker { display: none; }
-
-.rubric-summary::after {
-  content: ' ▸';
-  font-size: 0.7rem;
-  opacity: 0.6;
-}
-
-.rubric-details[open] .rubric-summary::after {
-  content: ' ▾';
-}
-
-.rubric-body {
+.game-play-overlay {
+  position: absolute;
+  inset: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  padding: 0 0.5rem 0.5rem;
-  border-top: 1.5px solid #e8e3da;
-  margin-top: 0.25rem;
-  padding-top: 0.4rem;
+  place-items: center;
+  background: rgba(248, 247, 234, 0.78);
+  z-index: 20;
 }
 
-.rubric-col {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.rubric-col-title {
-  font-weight: 700;
-  font-size: 0.75rem;
-  margin-bottom: 0.15rem;
-}
-
-.rubric-good .rubric-col-title { color: var(--green-dark); }
-.rubric-bad  .rubric-col-title { color: var(--red-dark); }
-
-.rubric-col ul {
-  margin: 0;
-  padding-left: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  color: #555;
-  font-size: 0.76rem;
-  line-height: 1.35;
+.game-play-btn {
+  font-size: 1.15rem;
+  padding: 0.7rem 1.7rem;
 }
 
 /* ── Settings panel ─────────────────────────────── */
@@ -1043,6 +995,8 @@ h1 {
 .avatar-card-label {
   font-size: 0.65rem;
   font-weight: 700;
+  font-family: 'Pixelify Sans', monospace;
+  font-synthesis: none;
   color: var(--border);
   letter-spacing: 0.03em;
   text-transform: uppercase;

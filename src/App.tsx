@@ -8,6 +8,8 @@ import Settings from './Settings';
 import AvatarEditor, { AvatarConfig, AvatarDisplay } from './AvatarEditor';
 import Stats, { GameRecord } from './Stats';
 import Leaderboard from './Leaderboard';
+import music1 from './assets/coffee-time.wav';
+import music2 from './assets/music2.wav';
 
 
 type Difficulty = 'relaxed' | 'normal' | 'strict';
@@ -32,6 +34,7 @@ const FEATURE_FLAG_VERSION_1_ALWAYS_ON = true;
 const STORAGE_KEY = 'clanker_clash_prefs_v1';
 const HISTORY_KEY = 'clanker_clash_history_v1';
 const MAX_HISTORY = 20;
+const MUSIC1_CUTOFF_SECONDS = 2 * 60 + 15; // 2:15
 
 function readHistory(): GameRecord[] {
   try {
@@ -211,14 +214,25 @@ export default function App() {
   const [gameOver, setGameOver]         = useState(false);
   const [resultText, setResultText]     = useState('');
   const [characterFrame, setCharacterFrame] = useState<CharacterFrame>('default');
+  const [showGamePlayCta, setShowGamePlayCta] = useState(initialOnboardingComplete);
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>({ baseId: 'spiky', colorScheme: 'classic' });
   const pullTimeoutRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hasUserInteractedRef = useRef(false);
+  const trackIndexRef = useRef(0);
+  const musicLevelRef = useRef(30);
 
   const effectiveAlwaysOn = allowAlwaysOn && alwaysOn;
   const balance = robots - humans;
 
   const showSessionPrompt =
     onboardingComplete && !effectiveAlwaysOn && !sessionActive && !isExtensionOpen && !sessionPromptDismissed;
+
+  const getAdjustedVolume = (trackSrc: string) => {
+    const baseVolume = musicLevelRef.current / 100;
+    const normalized = trackSrc === music2 ? baseVolume * 0.82 : baseVolume;
+    return Math.max(0, Math.min(1, normalized));
+  };
 
   useEffect(() => {
     return () => {
@@ -227,6 +241,80 @@ export default function App() {
       }
     };
   }, []);
+
+  //music controls
+  useEffect(() => {
+    const playlist = [music1, music2];
+    const audio = new Audio(playlist[0]);
+    audio.loop = false;
+    audio.volume = getAdjustedVolume(playlist[0]);
+    audioRef.current = audio;
+    trackIndexRef.current = 0;
+
+    const switchToTrack = (index: number) => {
+      trackIndexRef.current = index;
+      const nextTrack = playlist[index];
+      audio.src = nextTrack;
+      audio.volume = getAdjustedVolume(nextTrack);
+      if (hasUserInteractedRef.current) {
+        audio.play().catch(() => {});
+      }
+    };
+
+    const handleTrackEnded = () => {
+      switchToTrack((trackIndexRef.current + 1) % playlist.length);
+    };
+
+    const handleTimeUpdate = () => {
+      if (trackIndexRef.current === 0 && audio.currentTime >= MUSIC1_CUTOFF_SECONDS) {
+        switchToTrack(1);
+      }
+    };
+
+    audio.addEventListener('ended', handleTrackEnded);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+
+    return () => {
+      audio.removeEventListener('ended', handleTrackEnded);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.pause();
+    };
+  }, []);
+
+  useEffect(() => {
+    musicLevelRef.current = music;
+    if (audioRef.current) {
+      const currentTrack = trackIndexRef.current === 1 ? music2 : music1;
+      audioRef.current.volume = getAdjustedVolume(currentTrack);
+    }
+  }, [music]);
+
+  useEffect(() => {
+    const unlockAudioOnFirstInteraction = () => {
+      hasUserInteractedRef.current = true;
+      if (isExtensionOpen && audioRef.current) {
+        audioRef.current.play().catch(() => {});
+      }
+    };
+
+    window.addEventListener('pointerdown', unlockAudioOnFirstInteraction, { once: true });
+    window.addEventListener('keydown', unlockAudioOnFirstInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudioOnFirstInteraction);
+      window.removeEventListener('keydown', unlockAudioOnFirstInteraction);
+    };
+  }, [isExtensionOpen]);
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    if (isExtensionOpen && hasUserInteractedRef.current) {
+      audioRef.current.play().catch(() => {});
+    } else {
+      audioRef.current.pause();
+    }
+  }, [isExtensionOpen]);
 
   useEffect(() => {
     if (!onboardingComplete) return;
@@ -362,6 +450,7 @@ export default function App() {
     if (nextAlwaysOn) {
       setSessionActive(true);
       setIsExtensionOpen(true);
+      setShowGamePlayCta(true);
     } else {
       setSessionActive(false);
       setIsExtensionOpen(false);
@@ -383,6 +472,15 @@ export default function App() {
       if (next && !effectiveAlwaysOn) {
         setSessionActive(true);
         setSessionPromptDismissed(true);
+      }
+      if (next && onboardingComplete) {
+        setShowGamePlayCta(true);
+      }
+      if (next) {
+        hasUserInteractedRef.current = true;
+        audioRef.current?.play().catch(() => {});
+      } else {
+        audioRef.current?.pause();
       }
       return next;
     });
@@ -427,6 +525,9 @@ export default function App() {
                   setSessionActive(true);
                   setIsExtensionOpen(true);
                   setSessionPromptDismissed(true);
+                  if (onboardingComplete) {
+                    setShowGamePlayCta(true);
+                  }
                 }}
               >
                 Turn On
@@ -469,6 +570,13 @@ export default function App() {
                 </div>
 
                 <section className={`panel ${view === 'game' ? 'active' : ''}`}>
+                  {showGamePlayCta && (
+                    <div className="game-play-overlay">
+                      <button className="play-btn game-play-btn" onClick={() => setShowGamePlayCta(false)}>
+                        Play
+                      </button>
+                    </div>
+                  )}
                   <div className="status-row">
                     <span className="badge humans">
                       Humans: <b>{humans}</b>
