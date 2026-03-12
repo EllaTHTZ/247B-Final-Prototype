@@ -1,0 +1,13 @@
+{
+  "name": "clanker-score-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.16.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}

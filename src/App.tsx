@@ -17,7 +17,18 @@ type MessageRole = 'user' | 'system';
 type FeedbackTone = 'neutral' | 'good' | 'bad';
 type ViewMode = 'game' | 'settings' | 'stats' | 'leaderboard' | 'avatar';
 type ChatMessage = { role: MessageRole; text: string };
-type RoundScore = { intentional: boolean; message: string; suggestion: string };
+type RoundScore = {
+  score: number;
+  intentional: boolean;
+  message: string;
+  suggestion: string;
+  flags?: {
+    templateLeftOver: boolean;
+    repeatPrompt: boolean;
+    assignmentDump: boolean;
+    shortcutSeeking: boolean;
+  };
+};
 
 type CharacterFrame = 'default' | 'humansPull' | 'robotsPull';
 
@@ -99,19 +110,46 @@ function readStoredPrefs(): StoredPrefs | null {
   }
 }
 
+async function scorePromptWithGemini(prompt: string, recentPrompts: string[]) {
+  const response = await fetch('https://clanker-score-724869970530.us-central1.run.app/score-prompt', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt,
+      recentPrompts,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to score prompt');
+  }
+
+  return response.json() as Promise<RoundScore>;
+}
+
 function scorePrompt(prompt: string, level: Difficulty): RoundScore {
   const lowered = prompt.toLowerCase();
-  let score = 0;
-  if (prompt.length > 35) score += 2;
-  if (prompt.length > 80) score += 1;
-  if (/[?]/.test(prompt)) score += 1;
-  if (/\b(explain|compare|why|how|step|hint|feedback|attempt|understand|learn|plan)\b/.test(lowered)) score += 3;
-  if (/\b(context|class|topic|goal|constraint|rubric|my work|i tried|example)\b/.test(lowered)) score += 3;
-  if (/\bjust|answer only|do it for me|copy|paste|homework answer|solve this\b/.test(lowered)) score -= 3;
-  if (/^\s*(answer|solve|do)\b/.test(lowered)) score -= 2;
-  if (prompt.split(' ').length < 6) score -= 2;
-  const intentional = score >= difficultyConfig[level].minGoodScore;
+  let rawScore = 0;
+
+  if (prompt.length > 35) rawScore += 2;
+  if (prompt.length > 80) rawScore += 1;
+  if (/[?]/.test(prompt)) rawScore += 1;
+  if (/\b(explain|compare|why|how|step|hint|feedback|attempt|understand|learn|plan)\b/.test(lowered)) rawScore += 3;
+  if (/\b(context|class|topic|goal|constraint|rubric|my work|i tried|example)\b/.test(lowered)) rawScore += 3;
+  if (/\bjust|answer only|do it for me|copy|paste|homework answer|solve this\b/.test(lowered)) rawScore -= 3;
+  if (/^\s*(answer|solve|do)\b/.test(lowered)) rawScore -= 2;
+  if (prompt.split(' ').length < 6) rawScore -= 2;
+
+  const intentional = rawScore >= difficultyConfig[level].minGoodScore;
+
+  const score = intentional
+    ? Math.max(1, Math.min(3, Math.floor(rawScore / 3)))
+    : Math.min(-1, Math.max(-3, -Math.ceil((difficultyConfig[level].minGoodScore - rawScore) / 2)));
+
   return {
+    score,
     intentional,
     message: intentional
       ? 'Intentional prompt. You gave context or learning intent, so humans gain ground.'
@@ -120,6 +158,16 @@ function scorePrompt(prompt: string, level: Difficulty): RoundScore {
       ? 'Nice. Keep asking for hints, reasoning, or checks for understanding.'
       : 'Try adding your goal, what you already tried, and ask for guidance instead of a full answer.',
   };
+}
+
+function mapScoreToDifficulty(score: number, difficulty: Difficulty): number {
+  const absScore = Math.abs(score);
+  const cap = difficulty === 'relaxed' ? 1 : difficulty === 'normal' ? 2 : 3;
+  const mapped = Math.min(absScore, cap);
+
+  if (score > 0) return mapped;
+  if (score < 0) return -mapped;
+  return 0;
 }
 
 const PX_PER_POINT = 8;
@@ -389,11 +437,17 @@ export default function App() {
     }
   }
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (gameOver) return;
     const nextPrompt = prompt.trim();
     if (!nextPrompt) return;
+
+    const recentPrompts = chat
+      .filter((entry) => entry.role === 'user')
+      .map((entry) => entry.text)
+      .slice(0, 5);
+
     addMessage('user', nextPrompt);
 
     const extensionActive = onboardingComplete && isExtensionOpen && promptPermission && (effectiveAlwaysOn || sessionActive);
@@ -403,33 +457,48 @@ export default function App() {
       return;
     }
 
-    const scoreData = scorePrompt(nextPrompt, difficulty);
-    const config = difficultyConfig[difficulty];
+    let scoreData: RoundScore;
 
+    try {
+      scoreData = await scorePromptWithGemini(nextPrompt, recentPrompts);
+    } catch {
+      scoreData = scorePrompt(nextPrompt, difficulty);
+    }
     let nextHumans = humans;
     let nextRobots = robots;
     let nextIntentional = roundIntentional;
     let nextLowEffort = roundLowEffort;
 
-    if (scoreData.intentional) {
-      nextHumans = Math.min(MAX_POINTS, humans + config.humanGain);
+    const adjustedPoints = mapScoreToDifficulty(scoreData.score, difficulty);
+
+    if (adjustedPoints > 0) {
+      nextHumans = Math.min(MAX_POINTS, humans + adjustedPoints);
       nextIntentional = roundIntentional + 1;
       setHumans(nextHumans);
       setRoundIntentional(nextIntentional);
       setFeedbackTone('good');
       setFeedbackText(`${scoreData.message} ${scoreData.suggestion}`);
       flashPullFrame('humans');
-    } else {
-      nextRobots = Math.min(MAX_POINTS, robots + config.robotGain);
+    } else if (adjustedPoints < 0) {
+      nextRobots = Math.min(MAX_POINTS, robots + Math.abs(adjustedPoints));
       nextLowEffort = roundLowEffort + 1;
       setRobots(nextRobots);
       setRoundLowEffort(nextLowEffort);
       setFeedbackTone('bad');
       setFeedbackText(`${scoreData.message} ${scoreData.suggestion}`);
       flashPullFrame('robots');
+    } else {
+      setFeedbackTone('neutral');
+      setFeedbackText(`${scoreData.message} ${scoreData.suggestion}`);
     }
 
-    addMessage('system', `${scoreData.intentional ? 'Humans' : 'Robots'} gain points. (${nextHumans}-${nextRobots})`);
+    const roundWinnerText =
+      adjustedPoints > 0
+        ? 'Humans gain points.'
+        : adjustedPoints < 0
+          ? 'Robots gain points.'
+          : 'No points awarded.';
+    addMessage('system', `${roundWinnerText} (${nextHumans}-${nextRobots})`);
 
     if (nextHumans >= MAX_POINTS || nextRobots >= MAX_POINTS) {
       endGame(nextHumans, nextRobots, nextIntentional, nextLowEffort);

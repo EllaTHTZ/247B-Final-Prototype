@@ -23,7 +23,6 @@ const mockLeaderboard: LeaderboardEntry[] = [
   { rank: 8, avatar: '🐸', name: 'Friend 16', score: 1287, isCurrentUser: false },
 ];
 
-const MEDAL = ['🥇', '🥈', '🥉'] as const;
 const MAX_SCORE = mockLeaderboard[0].score;
 
 export default function Leaderboard({ isActive, currentAvatar, onBack }: LeaderboardProps) {
