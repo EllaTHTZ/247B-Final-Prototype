@@ -13,49 +13,82 @@ type LeaderboardEntry = {
 };
 
 const mockLeaderboard: LeaderboardEntry[] = [
-  { rank: 1, avatar: '🧙', name: 'Friend 3', score: 2847, isCurrentUser: false },
+  { rank: 1, avatar: '🧙', name: 'Friend 3',  score: 2847, isCurrentUser: false },
   { rank: 2, avatar: '🦸', name: 'Friend 39', score: 2620, isCurrentUser: false },
   { rank: 3, avatar: '🥷', name: 'Friend 21', score: 2503, isCurrentUser: false },
-  { rank: 4, avatar: '🧑‍💻', name: 'You', score: 1892, isCurrentUser: true },
-  { rank: 5, avatar: '👩‍🔬', name: 'Friend 1', score: 1745, isCurrentUser: false },
+  { rank: 4, avatar: '🧑‍💻', name: 'You',       score: 1892, isCurrentUser: true  },
+  { rank: 5, avatar: '👩‍🔬', name: 'Friend 1',  score: 1745, isCurrentUser: false },
   { rank: 6, avatar: '🤠', name: 'Friend 34', score: 1598, isCurrentUser: false },
   { rank: 7, avatar: '🐱', name: 'Friend 20', score: 1401, isCurrentUser: false },
   { rank: 8, avatar: '🐸', name: 'Friend 16', score: 1287, isCurrentUser: false },
 ];
 
+const MEDAL = ['🥇', '🥈', '🥉'] as const;
+const MAX_SCORE = mockLeaderboard[0].score;
+
 export default function Leaderboard({ isActive, currentAvatar, onBack }: LeaderboardProps) {
-  const leaderboardWithCurrentAvatar = mockLeaderboard.map((entry) =>
-    entry.isCurrentUser ? { ...entry, avatar: currentAvatar } : entry
+  const entries = mockLeaderboard.map((e) =>
+    e.isCurrentUser ? { ...e, avatar: currentAvatar } : e
   );
+
+  const podium  = entries.slice(0, 3);
+  const restRaw = entries.slice(3);
 
   return (
     <section className={`panel ${isActive ? 'active' : ''}`}>
-      <h2>Leaderboard</h2>
-      <p className="leaderboard-subtitle">Human Resistance Points</p>
 
-      <div className="leaderboard-list">
-        {leaderboardWithCurrentAvatar.map((entry) => (
-          <div
-            key={entry.rank}
-            className={`leaderboard-row ${entry.isCurrentUser ? 'current-user' : ''} ${entry.rank <= 3 ? `rank-${entry.rank}` : ''}`}
-          >
-            <div className="leaderboard-rank">
-              {entry.rank === 1 && <span className="rank-badge gold">1st</span>}
-              {entry.rank === 2 && <span className="rank-badge silver">2nd</span>}
-              {entry.rank === 3 && <span className="rank-badge bronze">3rd</span>}
-              {entry.rank > 3 && <span className="rank-number">{entry.rank}</span>}
-            </div>
-            <div className="leaderboard-player">
-              <span className="player-avatar">{entry.avatar}</span>
-              <span className="player-name">{entry.name}</span>
-            </div>
-            <div className="leaderboard-score">{entry.score.toLocaleString()}</div>
-          </div>
-        ))}
+      {/* ── header ── */}
+      <div className="lb-header">
+        <span className="lb-title">🏆 Leaderboard</span>
+        <span className="lb-subtitle">Human Resistance Points</span>
       </div>
 
-      <button className="secondary-btn" onClick={onBack}>
-        Back
+      {/* ── podium ── */}
+      <div className="lb-podium">
+        {/* reorder so 2nd is left, 1st centre, 3rd right */}
+        {[podium[1], podium[0], podium[2]].map((e, col) => {
+          const heights = ['64px', '88px', '52px'];   // left / centre / right
+          const labels  = ['2ND', '1ST', '3RD'];
+          return (
+            <div key={e.rank} className={`lb-podium-col lb-podium-col--${col}`}>
+              <div className="lb-podium-avatar">{e.avatar}</div>
+              <div className="lb-podium-name">{e.name}</div>
+              <div className="lb-podium-score">{e.score.toLocaleString()}</div>
+              <div
+                className={`lb-podium-block lb-podium-block--${col}`}
+                style={{ height: heights[col] }}
+              >
+                <span className="lb-podium-place">{labels[col]}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── rest of list ── */}
+      <div className="lb-list">
+        {restRaw.map((e) => {
+          const pct = Math.round((e.score / MAX_SCORE) * 100);
+          return (
+            <div key={e.rank} className={`lb-row${e.isCurrentUser ? ' lb-row--you' : ''}`}>
+              <span className="lb-row-rank">{e.rank}</span>
+              <span className="lb-row-avatar">{e.avatar}</span>
+              <div className="lb-row-info">
+                <div className="lb-row-top">
+                  <span className="lb-row-name">{e.name}</span>
+                  <span className="lb-row-score">{e.score.toLocaleString()}</span>
+                </div>
+                <div className="lb-bar-track">
+                  <div className="lb-bar-fill" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <button className="secondary-btn" style={{ marginTop: '0.6rem' }} onClick={onBack}>
+        ← Back
       </button>
     </section>
   );
