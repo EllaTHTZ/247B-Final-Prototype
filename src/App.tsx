@@ -557,15 +557,21 @@ export default function App() {
                     <div style={{ cursor: 'pointer' }} onClick={() => setView('settings')}>
                       <AvatarDisplay config={avatarConfig} width={26} height={32} />
                     </div>
-                    <button className="icon-btn" title="Leaderboard" onClick={() => setView('leaderboard')}>
-                      ★
-                    </button>
-                    <button className="icon-btn" title="Stats" onClick={() => setView('stats')}>
-                      ▦
-                    </button>
-                    <button className="icon-btn" title="Settings" onClick={() => setView('settings')}>
-                      ⚙
-                    </button>
+                    <button
+                      className={`icon-btn${view === 'leaderboard' ? ' icon-btn--active' : ''}`}
+                      title="Leaderboard"
+                      onClick={() => setView('leaderboard')}
+                    >🏆</button>
+                    <button
+                      className={`icon-btn${view === 'stats' ? ' icon-btn--active' : ''}`}
+                      title="Stats"
+                      onClick={() => setView('stats')}
+                    >📊</button>
+                    <button
+                      className={`icon-btn${view === 'settings' ? ' icon-btn--active' : ''}`}
+                      title="Settings"
+                      onClick={() => setView('settings')}
+                    >⚙️</button>
                   </div>
                 </div>
 
