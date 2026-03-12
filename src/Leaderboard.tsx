@@ -1,6 +1,8 @@
+import { AvatarConfig, AvatarDisplay } from './AvatarEditor';
+
 type LeaderboardProps = {
   isActive: boolean;
-  currentAvatar: string;
+  currentAvatarConfig: AvatarConfig;
   onBack: () => void;
 };
 
@@ -25,10 +27,8 @@ const mockLeaderboard: LeaderboardEntry[] = [
 
 const MAX_SCORE = mockLeaderboard[0].score;
 
-export default function Leaderboard({ isActive, currentAvatar, onBack }: LeaderboardProps) {
-  const entries = mockLeaderboard.map((e) =>
-    e.isCurrentUser ? { ...e, avatar: currentAvatar } : e
-  );
+export default function Leaderboard({ isActive, currentAvatarConfig, onBack }: LeaderboardProps) {
+  const entries = mockLeaderboard;
 
   const podium  = entries.slice(0, 3);
   const restRaw = entries.slice(3);
@@ -71,7 +71,13 @@ export default function Leaderboard({ isActive, currentAvatar, onBack }: Leaderb
           return (
             <div key={e.rank} className={`lb-row${e.isCurrentUser ? ' lb-row--you' : ''}`}>
               <span className="lb-row-rank">{e.rank}</span>
-              <span className="lb-row-avatar">{e.avatar}</span>
+              <span className="lb-row-avatar">
+                {e.isCurrentUser ? (
+                  <AvatarDisplay config={currentAvatarConfig} width={22} height={28} />
+                ) : (
+                  e.avatar
+                )}
+              </span>
               <div className="lb-row-info">
                 <div className="lb-row-top">
                   <span className="lb-row-name">{e.name}</span>

@@ -1311,6 +1311,9 @@ h1 {
   font-size: 1.1rem;
   line-height: 1;
   text-align: center;
+  display: grid;
+  place-items: center;
+  min-height: 28px;
 }
 
 .lb-row-info {

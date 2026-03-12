@@ -37,6 +37,7 @@ type StoredPrefs = {
   alwaysOn: boolean;
   promptPermission: boolean;
   difficulty: Difficulty;
+  music?: number;
   avatarConfig?: AvatarConfig;
 };
 
@@ -100,7 +101,8 @@ function readStoredPrefs(): StoredPrefs | null {
       typeof parsed.onboardingComplete !== 'boolean' ||
       typeof parsed.alwaysOn !== 'boolean' ||
       typeof parsed.promptPermission !== 'boolean' ||
-      !['relaxed', 'normal', 'strict'].includes(parsed.difficulty)
+      !['relaxed', 'normal', 'strict'].includes(parsed.difficulty) ||
+      (parsed.music !== undefined && typeof parsed.music !== 'number')
     ) {
       return null;
     }
@@ -244,7 +246,7 @@ export default function App() {
 
   const [alwaysOn, setAlwaysOn] = useState(initialAlwaysOn);
   const [difficulty, setDifficulty] = useState<Difficulty>(storedPrefs?.difficulty ?? 'normal');
-  const [music, setMusic] = useState(30);
+  const [music, setMusic] = useState(storedPrefs?.music ?? 30);
   const [promptPermission, setPromptPermission] = useState(storedPrefs?.promptPermission ?? false);
   const [onboardingComplete, setOnboardingComplete] = useState(initialOnboardingComplete);
   const [sessionActive, setSessionActive] = useState(initialAlwaysOn);
@@ -263,7 +265,9 @@ export default function App() {
   const [resultText, setResultText]     = useState('');
   const [characterFrame, setCharacterFrame] = useState<CharacterFrame>('default');
   const [showGamePlayCta, setShowGamePlayCta] = useState(initialOnboardingComplete);
-  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>({ baseId: 'spiky', colorScheme: 'classic' });
+  const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(
+    storedPrefs?.avatarConfig ?? { baseId: 'spiky', colorScheme: 'classic' },
+  );
   const pullTimeoutRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasUserInteractedRef = useRef(false);
@@ -374,10 +378,11 @@ export default function App() {
         alwaysOn: effectiveAlwaysOn,
         promptPermission,
         difficulty,
+        music,
         avatarConfig,
       }),
     );
-  }, [difficulty, effectiveAlwaysOn, onboardingComplete, promptPermission, avatarConfig]);
+  }, [difficulty, effectiveAlwaysOn, onboardingComplete, promptPermission, music, avatarConfig]);
 
   function flashPullFrame(winner: 'humans' | 'robots') {
     if (pullTimeoutRef.current !== null) window.clearTimeout(pullTimeoutRef.current);
@@ -741,7 +746,7 @@ export default function App() {
 
                 <Leaderboard
                   isActive={view === 'leaderboard'}
-                  currentAvatar="You"
+                  currentAvatarConfig={avatarConfig}
                   onBack={() => setView('game')}
                 />
 
