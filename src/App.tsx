@@ -265,7 +265,7 @@ export default function App() {
   const [characterFrame, setCharacterFrame] = useState<CharacterFrame>('default');
   const [showGamePlayCta, setShowGamePlayCta] = useState(initialOnboardingComplete);
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(
-    storedPrefs?.avatarConfig ?? { baseId: 'spiky', colorScheme: 'classic' },
+    storedPrefs?.avatarConfig ?? { baseId: 'round', colorScheme: 'forest' },
   );
   const pullTimeoutRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -627,7 +627,7 @@ export default function App() {
                     <strong>Clanker Clash</strong>
                   </div>
                   <div className="extension-head-btns">
-                    <div style={{ cursor: 'pointer' }} onClick={() => setView('settings')}>
+                    <div style={{ cursor: 'pointer' }} onClick={() => setView('avatar')}>
                       <AvatarDisplay config={avatarConfig} width={26} height={32} />
                     </div>
                     <button

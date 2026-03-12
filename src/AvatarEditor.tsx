@@ -17,7 +17,7 @@ import { useState } from 'react';
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type BaseId    = 'spiky' | 'round' | 'tall' | 'wide' | 'tiny' | 'horns';
-export type PaletteId = 'classic' | 'ocean' | 'forest' | 'sunset' | 'night' | 'candy';
+export type PaletteId = 'forest' | 'ocean' | 'honeybee' | 'sunset' | 'night' | 'candy';
 
 export type AvatarConfig = {
   baseId:      BaseId;
@@ -40,9 +40,9 @@ export type ColorPalette = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const COLOR_PALETTES: ColorPalette[] = [
-  { id: 'classic', label: 'Classic',  skin: '#ffc20f', hat: '#00005a', clothing: '#dead2a', shoes: '#ed1c24', accent: '#ffffff', eyes: '#1f2a44' },
-  { id: 'ocean',   label: 'Ocean',    skin: '#ffc20f', hat: '#0d3b6e', clothing: '#1a7fc1', shoes: '#0a4f8c', accent: '#7fd4fa', eyes: '#1f2a44' },
   { id: 'forest',  label: 'Forest',   skin: '#f5a97a', hat: '#1b4a1e', clothing: '#2e7d32', shoes: '#4e342e', accent: '#a5d6a7', eyes: '#1f2a44' },
+  { id: 'honeybee', label: 'Honeybee',  skin: '#ffc20f', hat: '#000000', clothing: '#dead2a', shoes: '#ed1c24', accent: '#ffffff', eyes: '#1f2a44' },
+  { id: 'ocean',   label: 'Ocean',    skin: '#ffc20f', hat: '#0d3b6e', clothing: '#1a7fc1', shoes: '#0a4f8c', accent: '#7fd4fa', eyes: '#1f2a44' },
   { id: 'sunset',  label: 'Sunset',   skin: '#ffc20f', hat: '#6a1b1a', clothing: '#e65100', shoes: '#bf360c', accent: '#ffcc80', eyes: '#1f2a44' },
   { id: 'night',   label: 'Night',    skin: '#c3b1e1', hat: '#1a1a2e', clothing: '#4a148c', shoes: '#212121', accent: '#ce93d8', eyes: '#1f2a44' },
   { id: 'candy',   label: 'Candy',    skin: '#ffb3c6', hat: '#ad1457', clothing: '#f06292', shoes: '#880e4f', accent: '#fff9c4', eyes: '#1f2a44' },
