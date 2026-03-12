@@ -262,7 +262,6 @@ export default function App() {
   const [feedbackTone, setFeedbackTone] = useState<FeedbackTone>('neutral');
   const [feedbackText, setFeedbackText] = useState('Submit a prompt. Low-effort prompts help robots, thoughtful prompts help humans.');
   const [gameOver, setGameOver]         = useState(false);
-  const [resultText, setResultText]     = useState('');
   const [characterFrame, setCharacterFrame] = useState<CharacterFrame>('default');
   const [showGamePlayCta, setShowGamePlayCta] = useState(initialOnboardingComplete);
   const [avatarConfig, setAvatarConfig] = useState<AvatarConfig>(
@@ -416,12 +415,10 @@ export default function App() {
     });
 
     if (nextHumans > nextRobots) {
-      setResultText('Humans win. Reward unlocked: +25 coins and Mindful Starter badge.');
       addMessage('system', 'Session reflection: What prompt detail helped you learn the most?');
       return;
     }
 
-    setResultText('Robots win. Reflection: Rewrite one prompt using a template and play again.');
     addMessage('system', 'Session reflection: What made your prompts low-effort this round?');
   }
 
@@ -431,7 +428,6 @@ export default function App() {
     setRoundIntentional(0);
     setRoundLowEffort(0);
     setGameOver(false);
-    setResultText('');
     setFeedbackTone('neutral');
     setFeedbackText('New round started. Send a prompt to shift the balance.');
     setCharacterFrame('default');
@@ -566,6 +562,9 @@ export default function App() {
       : balance > 0
         ? 'Robots are pulling ahead from low-effort prompting.'
         : 'Humans are pulling ahead with mindful prompts.';
+  const didHumansWin = humans >= MAX_POINTS;
+  const gameOverTitle = didHumansWin ? 'You Win!' : 'You Lose!';
+  const gameOverCaption = didHumansWin ? 'Humans win, great job with the thoughtful prompts!' : 'Robots win, try using templates and feedback to craft more thoughtful prompts.';
 
   return (
     <div className="site-shell">
@@ -668,6 +667,19 @@ export default function App() {
 
                   <div className="arena" aria-label="Tug of war arena">
                     <TugArena avatarConfig={avatarConfig} balance={balance} characterFrame={characterFrame} />
+                    {gameOver && (
+                      <div
+                        className={`arena-overlay arena-overlay--${didHumansWin ? 'win' : 'lose'}`}
+                      >
+                        <div className="game-result-card">
+                          <h2 className="game-result-title">{gameOverTitle}</h2>
+                          <p className="game-result-caption">{gameOverCaption}</p>
+                          <button className="play-btn game-play-btn game-play-btn--small" onClick={resetGame}>
+                            Play Again
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     <div className={`arena-caption ${feedbackTone}`}>{feedbackText || ropeCaption}</div>
                   </div>
 
@@ -712,16 +724,6 @@ export default function App() {
                       ))}
                     </select>
                   </label>
-
-                  {gameOver && (
-                    <div className="result">
-                      {resultText}
-                      <br />
-                      <button className="secondary-btn" style={{ marginTop: '0.6rem' }} onClick={resetGame}>
-                        Play Again
-                      </button>
-                    </div>
-                  )}
                 </section>
 
                 <Settings
