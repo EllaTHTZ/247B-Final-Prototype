@@ -13,14 +13,14 @@ type LeaderboardEntry = {
 };
 
 const mockLeaderboard: LeaderboardEntry[] = [
-  { rank: 1, avatar: '🧙', name: 'Prompt Wizard', score: 2847, isCurrentUser: false },
-  { rank: 2, avatar: '🦸', name: 'Context Hero', score: 2620, isCurrentUser: false },
-  { rank: 3, avatar: '🥷', name: 'Silent Teacher', score: 2503, isCurrentUser: false },
+  { rank: 1, avatar: '🧙', name: 'Friend 3', score: 2847, isCurrentUser: false },
+  { rank: 2, avatar: '🦸', name: 'Friend 39', score: 2620, isCurrentUser: false },
+  { rank: 3, avatar: '🥷', name: 'Friend 21', score: 2503, isCurrentUser: false },
   { rank: 4, avatar: '🧑‍💻', name: 'You', score: 1892, isCurrentUser: true },
-  { rank: 5, avatar: '👩‍🔬', name: 'Lab Learner', score: 1745, isCurrentUser: false },
-  { rank: 6, avatar: '🤠', name: 'Mindful Sheriff', score: 1598, isCurrentUser: false },
-  { rank: 7, avatar: '🐱', name: 'Curious Cat', score: 1401, isCurrentUser: false },
-  { rank: 8, avatar: '🐸', name: 'Thoughtful Frog', score: 1287, isCurrentUser: false },
+  { rank: 5, avatar: '👩‍🔬', name: 'Friend 1', score: 1745, isCurrentUser: false },
+  { rank: 6, avatar: '🤠', name: 'Friend 34', score: 1598, isCurrentUser: false },
+  { rank: 7, avatar: '🐱', name: 'Friend 20', score: 1401, isCurrentUser: false },
+  { rank: 8, avatar: '🐸', name: 'Friend 16', score: 1287, isCurrentUser: false },
 ];
 
 export default function Leaderboard({ isActive, currentAvatar, onBack }: LeaderboardProps) {
