@@ -1,18 +1,22 @@
 # 247B Final Prototype - Clanker Clash
 
-React + TypeScript (Vite) clickable prototype of a **generic LLM site** with a simulated **Chrome extension overlay**.
+By: Thet Htar Thin Zar, Marissa Liu, Min Jung, Eva Casto \
+*for Stanford CS247B: Design for Behavior Change*
 
-## Notes
+Interactive prototype of a browser-extension-style game that encourages intentional prompting when using LLMs.
 
-- This is frontend-only prototype logic (no backend, no real extension permissions).
-- Prompt scoring is heuristic and intentionally very simple for demo use.
-- We suggest trying these prompts:
+The interface simulates a generic LLM website with a Chrome extension overlay that evaluates prompts and drives a tug-of-war game between Humans and Robots.
 
-## Onboarding Persistence
-- Preferences are saved in `localStorage` under key:
-  - `clanker_clash_prefs_v1`
-- On first visit, onboarding appears.
-- On refresh/next visit, onboarding is skipped once saved.
+## Prototype Architecture
+### Frontend
+* **Stack:** React + TypeScript (Vite)
+* **Deployment:** GitHub Pages
+* **Environment:** Simulated browser environment with extension overlay
+
+### Backend
+* **Stack:** Node.js + Express
+* **Deployment:** Hosted on Google Cloud Run
+* **AI Integration:** Uses Gemini API for prompt scoring
 
 ## Clear Preferences For Testing
 In browser DevTools Console:
@@ -23,6 +27,7 @@ localStorage.removeItem('clanker_clash_prefs_v1');
 
 Then refresh the page to see onboarding again.
 
-## Music Credits
-shushubobo - coffee time [no copyright music]
-shushubobo - stuck in nintendo ! ! ! [no copyright music]
+---
+
+### Music Credits
+shushubobo - coffee time [no copyright music], shushubobo - stuck in nintendo ! ! ! [no copyright music]
